@@ -3,6 +3,7 @@ DerivedDataCache
 Intermediate
 Saved
 Build/Android_ASTC
+.idea
 .vscode
 .vs
 *.VC.db
