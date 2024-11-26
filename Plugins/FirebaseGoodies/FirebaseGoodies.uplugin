@@ -10,7 +10,7 @@
 	"DocsURL": "https://docs.ninevastudios.com/#/ue-plugins/firebase-unreal",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/a972a30efb2747ce98fce6b92cc35377",
 	"SupportURL": "mailto:support@ninevastudios.com",
-	"EngineVersion": "5.3.0",
+	"EngineVersion": "5.5.0",
 	"CanContainContent": true,
 	"Installed": true,
 	"Modules": [

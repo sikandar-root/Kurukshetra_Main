@@ -10,7 +10,7 @@
 	"DocsURL": "https://docs.ninevastudios.com/#/ue-plugins/google-play-unreal",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/ed6dc1c7026b4e3fbcbacf51298b17a0",
 	"SupportURL": "mailto:support@ninevastudios.com",
-	"EngineVersion": "5.3.0",
+	"EngineVersion": "5.5.0",
 	"CanContainContent": true,
 	"Installed": true,
 	"Modules": [

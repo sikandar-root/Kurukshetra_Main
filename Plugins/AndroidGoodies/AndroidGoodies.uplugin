@@ -10,7 +10,7 @@
 	"DocsURL": "https://docs.ninevastudios.com/#/ue-plugins/android-goodies-unreal",
 	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/2775bb4f59e5498bb040d1e48767ea03",
 	"SupportURL": "mailto:support@ninevastudios.com",
-	"EngineVersion": "5.3.0",
+	"EngineVersion": "5.5.0",
 	"CanContainContent": true,
 	"Installed": true,
 	"Modules": [
