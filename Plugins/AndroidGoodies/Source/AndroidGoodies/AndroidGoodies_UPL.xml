@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+    Copyright (c) 2018 Nineva Studios
+-->
+<root xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <init>
+        <log text="[AndroidGoodies] AndroidGoodies initialization!"/>
+
+        <setStringReplace result="DefaultIconDir" source="$S(PluginDir)" find="/Source/AndroidGoodies" with="/Resources/Drawables"/>
+        <setStringFromProperty result="DrawablePathToEdit" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="AndroidDrawablesFolder" default="$S(DefaultIconDir)"/>
+        <setStringReplace result="HalfwayEditedDrawablePath" source="$S(DrawablePathToEdit)" find="(Path=&quot;" with=""/>
+        <setStringReplace result="DrawableDir" source="$S(HalfwayEditedDrawablePath)" find="&quot;)" with=""/>
+
+        <setStringFromProperty result="AndroidPackageName" ini="Engine" section="/Script/AndroidRuntimeSettings.AndroidRuntimeSettings" property="PackageName" default=""/>
+
+        <!-- Permissions -->
+        <setBoolFromProperty result="SendSmsPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="sendSmsPermission" default="false"/>
+        <setBoolFromProperty result="SetAlarmPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="setAlarmPermission" default="false"/>
+        <setBoolFromProperty result="CameraPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="cameraPermission" default="false"/>
+        <setBoolFromProperty result="FlashlightPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="flashlightPermission" default="false"/>
+        <setBoolFromProperty result="VibratePermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="vibratePermission" default="false"/>
+        <setBoolFromProperty result="CallPhonePermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="callPhonePermission" default="false"/>
+        <setBoolFromProperty result="ReadPhoneStatePermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="readPhoneStatePermission" default="false"/>
+        <setBoolFromProperty result="ReadContactsPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="readContactsPermission" default="false"/>
+        <setBoolFromProperty result="WriteContactsPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="writeContactsPermission" default="false"/>
+        <setBoolFromProperty result="InstallPackagesPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="installPackagesPermission" default="false"/>
+        <setBoolFromProperty result="CoarseLocationPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="coarseLocationPermission" default="false"/>
+        <setBoolFromProperty result="FineLocationPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="fineLocationPermission" default="false"/>
+        <setBoolFromProperty result="ManageWiFiStatePermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="changeWifiStatePermission" default="false"/>
+        <setBoolFromProperty result="SetExactAlarmsPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="setExactAlarmsPermission" default="true"/>
+        <setBoolFromProperty result="SendPushNotificationsPermission" ini="Engine" section="/Script/AndroidGoodies.AndroidGoodiesSettings" property="sendPushNotificationsPermission" default="true"/>
+
+        <setIntFromProperty result="TargetSDKVer" ini="Engine" section="/Script/AndroidRuntimeSettings.AndroidRuntimeSettings" property="TargetSDKVersion"/>
+        <setBoolIsGreater result="AddRequestLegacyExternalStorageTagToManifest" arg1="$I(TargetSDKVer)" arg2="28"/>
+
+        <!-- Debugging logs -->
+        <log text="[AndroidGoodies] Directory with drawables is: $S(DrawableDir)"/>
+
+        <log text="[AndroidGoodies] Permissions include list:"/>>
+        <log text="[AndroidGoodies] SMS: $B(SendSmsPermission)"/>
+        <log text="[AndroidGoodies] Alarm: $B(SetAlarmPermission)"/>
+        <log text="[AndroidGoodies] Camera: $B(CameraPermission)"/>
+        <log text="[AndroidGoodies] Flashlight: $B(FlashlightPermission)"/>
+        <log text="[AndroidGoodies] Vibrate: $B(VibratePermission)"/>
+        <log text="[AndroidGoodies] Call Phone: $B(CallPhonePermission)"/>
+        <log text="[AndroidGoodies] Read Phone state: $B(ReadPhoneStatePermission)"/>
+        <log text="[AndroidGoodies] Read Contacs: $B(ReadContactsPermission)"/>
+        <log text="[AndroidGoodies] Write Contacts: $B(WriteContactsPermission)"/>
+        <log text="[AndroidGoodies] Install Packages: $B(InstallPackagesPermission)"/>
+        <log text="[AndroidGoodies] Set Exact Alarms: $B(SetExactAlarmsPermission)"/>
+        <log text="[AndroidGoodies] Send push notifications (Android 13+): $B(SendPushNotificationsPermission)"/>
+
+        <log text="[AndroidGoodies] Target Android SDK is: $I(TargetSDKVer)"/>
+    </init>
+
+
+    <prebuildCopies>
+        <copyDir src="$S(PluginDir)/Private/Java" dst="$S(BuildDir)/src/com/ninevastudios/androidgoodies"/>
+        <copyDir src="$S(PluginDir)/Private/Xml" dst="$S(BuildDir)/res/xml"/>
+        <copyDir src="$S(DrawableDir)" dst="$S(BuildDir)/res/drawable"/>
+    </prebuildCopies>
+
+    <gradleProperties>
+        <insert>
+            android.useAndroidX=true
+            android.enableJetifier=true
+        </insert>
+    </gradleProperties>
+
+    <!-- optional additions to proguard -->
+    <proguardAdditions>
+        <insert>
+            -dontwarn com.ninevastudios.**
+            -keep class com.ninevastudios.** { *; }
+            -keep interface com.ninevastudios.** { *; }
+
+            -dontwarn androidx.**
+            -keep class androidx.** { *; }
+            -keep interface androidx.** { *; }
+
+            <!-- Suppresses shipping build proguard warnings which fail the packaging -->
+            -dontwarn java.lang.**
+            -dontwarn javax.lang.**
+            -dontwarn com.google.**
+        </insert>
+    </proguardAdditions>
+
+    <!-- optional updates applied to AndroidManifest.xml -->
+    <androidManifestUpdates>
+        <if condition="SendSmsPermission">
+            <true>
+                <addPermission android:name="android.permission.SEND_SMS"/>
+            </true>
+        </if>
+        <if condition="SetAlarmPermission">
+            <true>
+                <addPermission android:name="com.android.alarm.permission.SET_ALARM"/>
+            </true>
+        </if>
+        <if condition="CameraPermission">
+            <true>
+                <addPermission android:name="android.permission.CAMERA"/>
+            </true>
+        </if>
+        <if condition="FlashlightPermission">
+            <true>
+                <addPermission android:name="android.permission.FLASHLIGHT"/>
+            </true>
+        </if>
+        <if condition="VibratePermission">
+            <true>
+                <addPermission android:name="android.permission.VIBRATE"/>
+            </true>
+        </if>
+        <if condition="CallPhonePermission">
+            <true>
+                <addPermission android:name="android.permission.CALL_PHONE"/>
+            </true>
+        </if>
+        <if condition="ReadPhoneStatePermission">
+            <true>
+                <addPermission android:name="android.permission.READ_PHONE_STATE"/>
+            </true>
+        </if>
+        <if condition="ReadContactsPermission">
+            <true>
+                <addPermission android:name="android.permission.READ_CONTACTS"/>
+            </true>
+        </if>
+        <if condition="WriteContactsPermission">
+            <true>
+                <addPermission android:name="android.permission.WRITE_CONTACTS"/>
+            </true>
+        </if>
+        <if condition="InstallPackagesPermission">
+            <true>
+                <addPermission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+            </true>
+        </if>
+        <if condition="CoarseLocationPermission">
+            <true>
+                <addPermission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+            </true>
+        </if>
+        <if condition="FineLocationPermission">
+            <true>
+                <addPermission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+            </true>
+        </if>
+        <if condition="ManageWiFiStatePermission">
+            <true>
+                <addPermission android:name="android.permission.CHANGE_WIFI_STATE"/>
+            </true>
+        </if>
+        <if condition="SetExactAlarmsPermission">
+            <true>
+                <addPermission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
+            </true>
+        </if>
+        <if condition="SendPushNotificationsPermission">
+            <true>
+                <addPermission android:name="android.permission.POST_NOTIFICATIONS"/>
+            </true>
+        </if>
+
+        <if condition="AddRequestLegacyExternalStorageTagToManifest">
+            <true>
+                <log text="[AndroidGoodies] Adding requestLegacyExternalStorage tag to Manifest..."/>
+                <addAttribute tag="application" name="android:requestLegacyExternalStorage" value="true"/>
+            </true>
+        </if>
+
+        <setElement result="AGProvider" value="provider"/>
+        <addAttribute tag="$AGProvider" name="android:name" value="com.ninevastudios.androidgoodies.AGFileProvider"/>
+        <addAttribute tag="$AGProvider" name="android:authorities" value="$S(AndroidPackageName).AGFileProvider"/>
+        <addAttribute tag="$AGProvider" name="android:exported" value="false"/>
+        <addAttribute tag="$AGProvider" name="android:grantUriPermissions" value="true"/>
+
+        <setElement result="AGProviderMeta" value="meta-data"/>
+        <addAttribute tag="$AGProviderMeta" name="android:name" value="android.support.FILE_PROVIDER_PATHS"/>
+        <addAttribute tag="$AGProviderMeta" name="android:resource" value="@xml/provider_paths"/>
+        <addElement tag="$AGProvider" name="AGProviderMeta"/>
+
+        <addElement tag="application" name="AGProvider"/>
+
+        <!--  This is needed for direct sharing to work -->
+        <addElements tag="manifest">
+            <queries>
+                <package android:name="org.telegram.messenger"/>
+                <package android:name="com.twitter.android"/>
+                <package android:name="com.facebook.katana"/>
+                <package android:name="com.whatsapp"/>
+                <package android:name="com.instagram.android"/>
+                <package android:name="com.viber.voip"/>
+            </queries>
+        </addElements>
+
+        <addElements tag="application">
+            <activity android:name="com.ninevastudios.androidgoodies.AndroidGoodiesActivity"
+                      android:theme="@android:style/Theme.Translucent.NoTitleBar"
+                      android:exported="false"/>
+            <activity android:name="com.ninevastudios.androidgoodies.AGNotificationLaunchActivity"
+                      android:launchMode="singleTask"
+                      android:taskAffinity=""
+                      android:excludeFromRecents="true"
+                      android:theme="@android:style/Theme.Translucent.NoTitleBar"
+                      android:exported="false"/>
+            <receiver android:name="com.ninevastudios.androidgoodies.NotificationBroadcastReceiver"/>
+        </addElements>
+    </androidManifestUpdates>
+
+    <buildGradleAdditions>
+        <insert>
+            <!--      android {-->
+            <!--        compileOptions {-->
+            <!--          sourceCompatibility 1.8-->
+            <!--          targetCompatibility 1.8-->
+            <!--        }-->
+            <!--      }-->
+
+            dependencies {
+            implementation 'com.google.android.play:core:1.8.0'
+            implementation 'com.google.guava:guava:28.2-android'
+            }
+        </insert>
+    </buildGradleAdditions>
+
+    <baseBuildGradleAdditions>
+        <insert>
+            allprojects {
+            def mappings = [
+            'android.support.annotation': 'androidx.annotation',
+            'android.arch.lifecycle': 'androidx.lifecycle',
+            'android.support.v4.app.NotificationCompat': 'androidx.core.app.NotificationCompat',
+            'android.support.v4.app.ActivityCompat': 'androidx.core.app.ActivityCompat',
+            'android.support.v4.content.ContextCompat': 'androidx.core.content.ContextCompat',
+            'android.support.v4.app.NotificationManagerCompat': 'androidx.core.app.NotificationManagerCompat',
+            'android.support.v4.content.FileProvider': 'androidx.core.content.FileProvider',
+            'android.support.v13.app.FragmentCompat': 'androidx.legacy.app.FragmentCompat',
+            'android.arch.lifecycle.Lifecycle': 'androidx.lifecycle.Lifecycle',
+            'android.arch.lifecycle.LifecycleObserver': 'androidx.lifecycle.LifecycleObserver',
+            'android.arch.lifecycle.OnLifecycleEvent': 'androidx.lifecycle.OnLifecycleEvent',
+            'android.arch.lifecycle.ProcessLifecycleOwner': 'androidx.lifecycle.ProcessLifecycleOwner',
+            ]
+
+            beforeEvaluate { project ->
+            project.rootProject.projectDir.traverse(type: groovy.io.FileType.FILES, nameFilter: ~/.*\.java$/) { f ->
+            mappings.each { entry ->
+            if (f.getText('UTF-8').contains(entry.key)) {
+            println "Updating ${entry.key} to ${entry.value} in file ${f}"
+            ant.replace(file: f, token: entry.key, value: entry.value)
+            }
+            }
+            }
+            }
+            }
+        </insert>
+    </baseBuildGradleAdditions>
+
+</root>

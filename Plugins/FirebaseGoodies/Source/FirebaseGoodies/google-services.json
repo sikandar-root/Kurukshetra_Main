@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "841208107502",
+    "firebase_url": "https://babesappweb.firebaseio.com",
+    "project_id": "babesappweb",
+    "storage_bucket": "babesappweb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841208107502:android:0007254b41514d5af27eff",
+        "android_client_info": {
+          "package_name": "com.Asociety.free.Boxing.Game.BoxingBabes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "841208107502-3qtgafa3gv86juv50frknn4kbcri4p78.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChK2Lm4vkovqfRG26Xu8kYXG2bV1tIStw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "841208107502-3qtgafa3gv86juv50frknn4kbcri4p78.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

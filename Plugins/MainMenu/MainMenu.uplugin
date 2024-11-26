@@ -1,0 +1,31 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "MainMenu",
+	"Description": "",
+	"Category": "Sikandar_Root",
+	"CreatedBy": "Sikandar_root",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Plugins": [
+		{
+			"Name": "FirebaseGoodies",
+			"Enabled": true
+		},
+		{
+			"Name": "AndroidGoodies",
+			"Enabled": true
+		},
+		{
+			"Name": "GooglePlayGoodies",
+			"Enabled": true
+		}
+	]
+}

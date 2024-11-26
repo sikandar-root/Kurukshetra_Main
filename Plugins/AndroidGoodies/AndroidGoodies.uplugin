@@ -1,0 +1,28 @@
+{
+	"FileVersion": 3,
+	"Version": 2020200,
+	"VersionName": "2.2.2",
+	"FriendlyName": "Android Goodies",
+	"Description": "Android Goodies is a collection of Android native methods for your Unreal Engine project.",
+	"Category": "Code Plugins",
+	"CreatedBy": "Nineva Studios",
+	"CreatedByURL": "https://ninevastudios.com/",
+	"DocsURL": "https://docs.ninevastudios.com/#/ue-plugins/android-goodies-unreal",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/2775bb4f59e5498bb040d1e48767ea03",
+	"SupportURL": "mailto:support@ninevastudios.com",
+	"EngineVersion": "5.3.0",
+	"CanContainContent": true,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "AndroidGoodies",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Mac",
+				"Android"
+			]
+		}
+	]
+}

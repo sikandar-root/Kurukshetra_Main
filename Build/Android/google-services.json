@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "732788214038",
+    "firebase_url": "https://testlogin-49ed0-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "testlogin-49ed0",
+    "storage_bucket": "testlogin-49ed0.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:732788214038:android:a294417cc24eb4a7e9e837",
+        "android_client_info": {
+          "package_name": "com.kurukshetra.rootunion"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "732788214038-f6t0cralgr3cd48uf5scdebiefmki78r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kurukshetra.rootunion",
+            "certificate_hash": "f2fd11423ea28471fa879a4e1ff93db9885c1946"
+          }
+        },
+        {
+          "client_id": "732788214038-gd1100ahplc0hilstl0kmuf14bqbimet.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1HrZC622sT_coipI-3VfmSYnkGBiSWu8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "732788214038-gd1100ahplc0hilstl0kmuf14bqbimet.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "732788214038-9k4p7ea01ov85j4879g1mlu43k3u2rbe.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.kurukshetra.rootunion"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
