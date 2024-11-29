@@ -15,34 +15,53 @@
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWifiScanSuccessDelegate, const TArray<UAGScanResultBPL*>&, ScanResult);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnWifiScanFailureDelegate, const FString&, ErrorMessage);
 
-
-USTRUCT(BlueprintType)
-struct FRect
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly)
-	int32 MinX;
-
-	UPROPERTY(BlueprintReadOnly)
-	int32 MinY;
-
-	UPROPERTY(BlueprintReadOnly)
-	int32 MaxX;
-
-	UPROPERTY(BlueprintReadOnly)
-	int32 MaxY;
-
-	FRect() : MinX(0), MinY(0), MaxX(0), MaxY(0) {}
-};
-
-
 UCLASS()
 class ANDROIDGOODIES_API UAGHardwareBPL : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 
 
+
+	/**
+	* Get the device viewport size in full screen mode.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
+	static FIntPoint GetDeviceViewportSizeFullScreen();
+
+	/**
+	* Get the device viewport size after reducing the notch and corner.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
+	static FIntPoint GetDeviceViewportSizeAdjusted();
+
+	/**
+	* Check if the device has a notch.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
+	static bool HasNotch();
+
+	/**
+	* Check if the device has rounded corners.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
+	static bool HasRoundedCorners();
+	/**
+	* Get the current volume level.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
+	static int32 GetVolumeLevel();
+
+	/**
+	* Set the volume level.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
+	static void SetVolumeLevel(int32 VolumeLevel);
+
+	/**
+	* Get the maximum volume level.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
+	static int32 GetMaxVolumeLevel();
 	/**
 	* Toggle flashlight ON/OFF
 	*
@@ -245,52 +264,6 @@ class ANDROIDGOODIES_API UAGHardwareBPL : public UBlueprintFunctionLibrary
 	*/
 	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies")
 	static int GetBatteryVoltage();
-
-	/**
-	* Get the device viewport size in full screen mode.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static FIntPoint GetDeviceViewportSizeFullScreen();
-
-	/**
-	* Get the device viewport size after reducing the notch and corner.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static FIntPoint GetDeviceViewportSizeAdjusted();
-
-	/**
-	* Check if the device has a notch.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static bool HasNotch();
-
-	/**
-	* Check if the device has rounded corners.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static bool HasRoundedCorners();
-	/**
-	* Get the current volume level.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static int32 GetVolumeLevel();
-
-	/**
-	* Set the volume level.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static void SetVolumeLevel(int32 VolumeLevel);
-
-	/**
-	* Get the maximum volume level.
-	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static int32 GetMaxVolumeLevel();
-
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Hardware")
-	static void SendNotification(const FString& Title, const FString& Text);
-
-	
 
 public:
 	static FOnWifiScanSuccessDelegate OnWifiScanSuccessDelegate;

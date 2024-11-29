@@ -129,6 +129,18 @@ public:
 	}
 
 	/**
+	* Whether the user has permission to schedule exact notifications.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Notifications")
+	static bool CanScheduleExactNotifications();
+
+	/**
+	* Open a screen where the user can grant permission to schedule exact alarms (For Android 12+).
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Notifications")
+	static void OpenExactAlarmSettingPage();
+
+	/**
 	* Schedule a notification to be shown in the status bar, stream, etc. after the specified time.
 	*
 	* @param Notification - the notification to post to the system.

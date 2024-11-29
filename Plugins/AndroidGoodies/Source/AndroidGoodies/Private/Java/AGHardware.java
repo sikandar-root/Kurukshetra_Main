@@ -5,9 +5,6 @@ package com.ninevastudios.androidgoodies;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -41,15 +38,6 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
 
-import android.graphics.Point;
-import android.media.AudioManager;
-import android.util.DisplayMetrics;
-import android.view.Display;
-import android.view.WindowInsets;
-import androidx.core.app.NotificationCompat;
-
-
-
 @SuppressWarnings("deprecation")
 @Keep
 public class AGHardware {
@@ -58,8 +46,6 @@ public class AGHardware {
 	public static native void onReceiverSuccessCallback(AScanResult[] results);
 
 	public static native void onReceiverFailureCallback(String message);
-	
-	private static final String CHANNEL_ID = "default_channel";
 
 	@Keep
 	public static void enableFlashlight(Activity activity, final boolean enable) {
@@ -488,87 +474,4 @@ public class AGHardware {
 			e.printStackTrace();
 		}
 	}
-	
-	
-	//    New Code Written By Sikandar
-
-	
-	public static int[] getDeviceViewportSizeFullScreen(Activity activity) {
-            Display display = activity.getWindowManager().getDefaultDisplay();
-            Point size = new Point();
-            display.getRealSize(size);
-            return new int[]{size.x, size.y};
-    }
-    
-        public static int[] getDeviceViewportSizeAdjusted(Activity activity) {
-            Display display = activity.getWindowManager().getDefaultDisplay();
-            Point size = new Point();
-            display.getSize(size);
-    
-            WindowInsets insets = activity.getWindow().getDecorView().getRootWindowInsets();
-            if (insets != null) {
-                int topInset = insets.getSystemWindowInsetTop();
-                int bottomInset = insets.getSystemWindowInsetBottom();
-                int leftInset = insets.getSystemWindowInsetLeft();
-                int rightInset = insets.getSystemWindowInsetRight();
-    
-                size.x -= (leftInset + rightInset);
-                size.y -= (topInset + bottomInset);
-            }
-    
-            return new int[]{size.x, size.y};
-        }
-    
-        public static boolean hasNotch(Activity activity) {
-            WindowInsets insets = activity.getWindow().getDecorView().getRootWindowInsets();
-            return insets != null && insets.getDisplayCutout() != null;
-        }
-    
-        public static boolean hasRoundedCorners(Activity activity) {
-            DisplayMetrics metrics = new DisplayMetrics();
-            activity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
-            float density = metrics.density;
-    
-            // Assuming that the presence of a radius value indicates rounded corners.
-            return density * 10 > 0;
-        }
-        
-        public static int getVolumeLevel(Activity activity) {
-                AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
-                return audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-        }
-        
-        public static void setVolumeLevel(Activity activity, int volumeLevel) {
-            AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
-            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, volumeLevel, 0);
-        }
-            
-        public static int getMaxVolumeLevel(Activity activity) {
-            AudioManager audioManager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
-            return audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        }
-        
-        public static void sendNotification(Activity activity, String title, String text) {
-                NotificationManager notificationManager = (NotificationManager) activity.getSystemService(Context.NOTIFICATION_SERVICE);
-        
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "Default Channel", NotificationManager.IMPORTANCE_DEFAULT);
-                    notificationManager.createNotificationChannel(channel);
-                }
-        
-                NotificationCompat.Builder builder = new NotificationCompat.Builder(activity, CHANNEL_ID)
-                        .setSmallIcon(android.R.drawable.ic_dialog_info)
-                        .setContentTitle(title)
-                        .setContentText(text)
-                        .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-        
-                Intent intent = new Intent(activity, activity.getClass());
-                PendingIntent pendingIntent = PendingIntent.getActivity(activity, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-                builder.setContentIntent(pendingIntent);
-        
-                notificationManager.notify(1, builder.build());
-        }
-        
 }
-
-

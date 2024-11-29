@@ -22,7 +22,7 @@ void UScreenShotHelper::ProcessScreenShot(int InSizeX, int InSizeY, const TArray
 		for (int Col = 0; Col < InSizeX; Col++)
 		{
 			const auto ColorArrIndex = Row * InSizeX + Col;
-#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 2
 			const auto ByteArrIndex = (InSizeY - 1 - Row) * InSizeX + Col;
 #else
 			const auto ByteArrIndex = ColorArrIndex;

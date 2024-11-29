@@ -29,6 +29,26 @@ jbyteArray bufferRef = nullptr;
 static const ANSICHAR* AGImagePickerClassName = "com/ninevastudios/androidgoodies/AGImagePicker";
 static const ANSICHAR* AGFilePickerClassName = "com/ninevastudios/androidgoodies/AGFilePicker";
 
+
+static int GetImageSize(const ImageSize ImageSize)
+{
+	switch (ImageSize)
+	{
+	case ImageSize::Original:
+		return 0;
+	case ImageSize::Max256:
+		return 256;
+	case ImageSize::Max512:
+		return 512;
+	case ImageSize::Max1024:
+		return 1024;
+	case ImageSize::Max2048:
+		return 2048;
+	default:
+		return 0;
+	}
+}
+
 UAGPickersBPL::UAGPickersBPL(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -41,7 +61,7 @@ void UAGPickersBPL::PickImageFromGallery(int quality, ImageSize maxSize, bool sh
 
 #if PLATFORM_ANDROID
 
-	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "pickImage", "(Landroid/app/Activity;IIZZZ)V", FJavaWrapper::GameActivityThis, quality, (int)maxSize, shouldGenerateThumbnails, true, false);
+	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "pickImage", "(Landroid/app/Activity;IIZZZ)V", FJavaWrapper::GameActivityThis, quality, GetImageSize(maxSize), shouldGenerateThumbnails, true, false);
 
 #endif
 }
@@ -53,7 +73,7 @@ void UAGPickersBPL::PickPhotoFromCamera(bool shouldGenerateThumbnails, const FOn
 
 #if PLATFORM_ANDROID
 
-	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "takePhoto", "(Landroid/app/Activity;IZZ)V", FJavaWrapper::GameActivityThis, (int)maxSize, shouldGenerateThumbnails, true);
+	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "takePhoto", "(Landroid/app/Activity;IZZ)V", FJavaWrapper::GameActivityThis, GetImageSize(maxSize), shouldGenerateThumbnails, true);
 
 #endif
 }
@@ -119,7 +139,7 @@ void UAGPickersBPL::GetChosenImagesData(int quality, ImageSize maxSize, bool sho
 	OnImageErrorDelegate = OnImagesPickErrorCallback;
 
 #if PLATFORM_ANDROID
-	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "pickImage", "(Landroid/app/Activity;IIZZZ)V", FJavaWrapper::GameActivityThis, quality, (int)maxSize, shouldGenerateThumbnails, false, allowMultiple);
+	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "pickImage", "(Landroid/app/Activity;IIZZZ)V", FJavaWrapper::GameActivityThis, quality, GetImageSize(maxSize), shouldGenerateThumbnails, false, allowMultiple);
 #endif
 }
 
@@ -129,10 +149,9 @@ void UAGPickersBPL::GetPhotoDataFromCamera(bool shouldGenerateThumbnails, const 
 	OnImageErrorDelegate = OnImagesPickErrorCallback;
 
 #if PLATFORM_ANDROID
-	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "takePhoto", "(Landroid/app/Activity;IZZ)V", FJavaWrapper::GameActivityThis, (int)maxSize,shouldGenerateThumbnails, false);
+	AGMethodCallUtils::CallStaticVoidMethod(AGImagePickerClassName, "takePhoto", "(Landroid/app/Activity;IZZ)V", FJavaWrapper::GameActivityThis, GetImageSize(maxSize),shouldGenerateThumbnails, false);
 #endif
 }
-
 
 
 void UAGPickersBPL::GetTextureFromPath(FString imagePath, const FOnImageReadyDelegate& onTextureReadyCallback, const FOnImageErrorDelegate& onTextureErrorCallback)
@@ -158,7 +177,8 @@ void UAGPickersBPL::ClearTexture(UTexture2D* texture)
 
 void UAGPickersBPL::OnImageReady(UTexture2D* texture)
 {
-	AsyncTask(ENamedThreads::GameThread, [=]() {
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
 		OnImageReadyDelegate.ExecuteIfBound(texture);
 	});
 
@@ -174,37 +194,41 @@ void UAGPickersBPL::OnImageReady(UTexture2D* texture)
 
 void UAGPickersBPL::OnImageError(FString error)
 {
-	AsyncTask(ENamedThreads::GameThread, [=]() {
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
 		OnImageErrorDelegate.ExecuteIfBound(error);
 	});
 }
 
 void UAGPickersBPL::OnImagesPicked(const TArray<UAGChosenImage*>& images)
 {
-	AsyncTask(ENamedThreads::GameThread, [=]() {
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
 		OnImagesPickedDelegate.ExecuteIfBound(images);
 	});
 }
 
 void UAGPickersBPL::OnFilesPicked(const TArray<UAGChosenFile*>& files)
 {
-	AsyncTask(ENamedThreads::GameThread, [=]() {
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
 		OnFilesPickedDelegate.ExecuteIfBound(files);
 	});
 }
 
 void UAGPickersBPL::OnFilesPickError(FString error)
 {
-	AsyncTask(ENamedThreads::GameThread, [=]() {
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
 		OnFilesPickErrorDelegate.ExecuteIfBound(error);
 	});
 }
+
 
 #if PLATFORM_ANDROID
 
 JNI_METHOD void Java_com_ninevastudios_androidgoodies_AGImagePicker_onImageReady(JNIEnv* env, jclass clazz, jbyteArray buffer, int width, int height)
 {
-	UE_LOG(LogTemp, Warning, TEXT("ANDROIDGOODIES => onImageReady callback caught in C++!"));
 	UE_LOG(LogTemp, Warning, TEXT("ANDROIDGOODIES => Image width: %d, height: %d"), width, height);
 
 	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
@@ -213,7 +237,7 @@ JNI_METHOD void Java_com_ninevastudios_androidgoodies_AGImagePicker_onImageReady
 	Env->DeleteLocalRef(buffer);
 	AsyncTask(ENamedThreads::GameThread, [=]() {
 		TArray<uint8> byteArray = AGArrayConvertor::ConvertToByteArray(bufferRef);
-		UTexture2D* result = AGMediaUtils::TextureFromByteArray(byteArray, width, height);		
+		UTexture2D* result = AGMediaUtils::TextureFromByteArray(byteArray, width, height);
 
 		UAGPickersBPL::OnImageReady(result);
 		
@@ -236,11 +260,10 @@ JNI_METHOD void Java_com_ninevastudios_androidgoodies_AGImagePicker_onImagesPick
 {
 	UE_LOG(LogTemp, Warning, TEXT("ANDROIDGOODIES => onImagesPicked callback caught in C++!"));
 
+	// TODO fix the callbacks to run on the Game thread
 	TArray<UAGChosenImage*> result = AGPickerUtils::ChosenImagesFromJavaArray(images);
 
-	AsyncTask(ENamedThreads::GameThread, [=]() {
-		UAGPickersBPL::OnImagesPicked(result);
-	});
+	UAGPickersBPL::OnImagesPicked(result);
 }
 
 JNI_METHOD void Java_com_ninevastudios_androidgoodies_AGFilePicker_onFilesPickError(JNIEnv* env, jclass clazz, jstring error)
@@ -258,11 +281,10 @@ JNI_METHOD void Java_com_ninevastudios_androidgoodies_AGFilePicker_onFilesPicked
 {
 	UE_LOG(LogTemp, Warning, TEXT("ANDROIDGOODIES => onFilesPicked callback caught in C++!"));
 
+	// TODO fix the callbacks to run on the Game thread
 	TArray<UAGChosenFile*> result = AGPickerUtils::ChosenFilesFromJavaArray(files);
 
-	AsyncTask(ENamedThreads::GameThread, [=]() {
-		UAGPickersBPL::OnFilesPicked(result);
-	});
+	UAGPickersBPL::OnFilesPicked(result);
 }
 
 #endif

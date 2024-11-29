@@ -13,5 +13,11 @@ struct ANDROIDGOODIES_API FAGContact
 	FString DisplayName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AndroidGoodies|Contacts")
+	FString PhotoUri;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AndroidGoodies|Contacts")
 	TArray<FString> Numbers;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AndroidGoodies|Contacts")
+	TArray<FString> Emails;
 };

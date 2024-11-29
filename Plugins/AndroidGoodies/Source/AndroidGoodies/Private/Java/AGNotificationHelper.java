@@ -2,6 +2,8 @@
 
 package com.ninevastudios.androidgoodies;
 
+import static android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM;
+
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.Notification;
@@ -193,11 +195,36 @@ public class AGNotificationHelper {
 
 	@Keep
 	public static void scheduleNotification(Activity activity, Notification notification, int id, long when) {
-		Log.d("AndroidGoodies", "Delay: " + when);
+		Log.d("AndroidGoodies", "Scheduling notification, delay: " + when);
 		AlarmManager alarmManager = (AlarmManager) activity.getSystemService(Context.ALARM_SERVICE);
 		Intent intent = getIntentForNotification(activity, notification, id);
-		alarmManager.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + when,
-				PendingIntent.getBroadcast(activity, id, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+		int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+		if (canScheduleExactAlarms(activity)) {
+			alarmManager.setExact(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + when,
+					PendingIntent.getBroadcast(activity, id, intent, flags));
+		} else {
+			alarmManager.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + when,
+					PendingIntent.getBroadcast(activity, id, intent, flags));
+		}
+	}
+
+	@Keep
+	public static boolean canScheduleExactAlarms(Activity activity) {
+		AlarmManager alarmManager = (AlarmManager) activity.getSystemService(Context.ALARM_SERVICE);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+			return alarmManager.canScheduleExactAlarms();
+		} else {
+			return true;
+		}
+	}
+
+	@Keep
+	public static void requestExactAlarmsPermission(Activity activity) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+			activity.startActivity(new Intent(ACTION_REQUEST_SCHEDULE_EXACT_ALARM));
+		} else {
+			Log.d("AndroidGoodies", "No need to request permission on android " + Build.VERSION.SDK_INT);
+		}
 	}
 
 	@Keep
@@ -222,7 +249,7 @@ public class AGNotificationHelper {
 		if (AGNotificationLaunchActivity.lastIntent == null) {
 			return "";
 		}
-		
+
 		if (AGNotificationLaunchActivity.lastIntent.hasExtra(key)) {
 			return AGNotificationLaunchActivity.lastIntent.getStringExtra(key);
 		}

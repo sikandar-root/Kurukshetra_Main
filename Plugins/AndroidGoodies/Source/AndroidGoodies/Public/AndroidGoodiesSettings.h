@@ -16,55 +16,59 @@ public:
 
 	/** Add send SMS permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool sendSmsPermission;
+	bool sendSmsPermission = false;
 
 	/** Add set alarm permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool setAlarmPermission;
+	bool setAlarmPermission = false;
 
 	/** Add camera permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool cameraPermission;
+	bool cameraPermission = false;
+
+	/** Add READ_MEDIA_IMAGES permission to Android Manifest  Required for file pickers to works on Android 13+ */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
+	bool readMediaImagesPermission = false;
 
 	/** Add flashlight permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool flashlightPermission;
+	bool flashlightPermission = false;
 
 	/** Add vibrate permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool vibratePermission;
+	bool vibratePermission = false;
 
 	/** Add call phone permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool callPhonePermission;
+	bool callPhonePermission = false;
 
 	/** Add read phone state permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool readPhoneStatePermission;
+	bool readPhoneStatePermission = false;
 
 	/** Add read contact permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool readContactsPermission;
+	bool readContactsPermission = false;
 
 	/** Add write contact permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool writeContactsPermission;
+	bool writeContactsPermission = false;
 
 	/** Add install packages permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool installPackagesPermission;
+	bool installPackagesPermission = false;
 
 	/** Add coarse location permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool coarseLocationPermission;
+	bool coarseLocationPermission = false;
 
 	/** Add fine location permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool fineLocationPermission;
+	bool fineLocationPermission = false;
 
 	/** Add change WI-FI state permission to Android Manifest */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")
-	bool changeWifiStatePermission;
+	bool changeWifiStatePermission = false;
 
 	/** You must add this permission if you are using scheduling notifications */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android Goodies Settings|Permissions")

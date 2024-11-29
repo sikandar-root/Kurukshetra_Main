@@ -6,10 +6,16 @@
 #include "AGContact.h"
 #include "AGContactsBPL.generated.h"
 
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPickContactSuccessDelegate, FAGContact, contact);
+
+DECLARE_DYNAMIC_DELEGATE_OneParam(FOnPickContactErrorelegate, FString, error);
+
+
 UCLASS()
 class ANDROIDGOODIES_API UAGContactsBPL : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
+
 public:
 	/**
 	* Get the phone number, stored on the SIM card. 
@@ -24,19 +30,19 @@ public:
 	* Get the list of contacts containing the given name.
 	* Requires the "android.permission.READ_CONTACTS" permission.
 	*
-	* @param name - the contact name to search for.
+	* @param Name - the contact name to search for.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Contacts")
-	static TArray<FAGContact> GetContactsWithName(FString name);
+	static TArray<FAGContact> GetContactsWithName(FString Name);
 
 	/**
 	* Get the list of contacts containing with the given number.
 	* Requires the "android.permission.READ_CONTACTS" permission.
 	*
-	* @param number - the phone number to search for.
+	* @param Number - the phone number to search for.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Contacts")
-	static TArray<FAGContact> GetContactsWithNumber(FString number);
+	static TArray<FAGContact> GetContactsWithNumber(FString Number);
 
 	/**
 	* Get the list of all contacts.
@@ -49,9 +55,23 @@ public:
 	* Add a contact to the phone book.
 	* Requires the "android.permission.WRITE_CONTACTS" permission.
 	*
-	* @param contact - contact to add.
+	* @param Contact - contact to add.
 	* @return - true if the operation was successful.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Contacts")
-	static bool AddContact(FAGContact contact);
+	static bool AddContact(FAGContact Contact);
+
+	/**
+	* Picks a contact from address book.
+	* Requires the "android.permission.READ_CONTACTS" permission.
+	*
+	* @param OnContactPickedCallback - invoked when contact successfully picked
+	* @param OnContactPickErrorCallback - invoked when error occured
+	*/
+	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|Contacts")
+	static void PickContact(const FOnPickContactSuccessDelegate& OnContactPickedCallback, const FOnPickContactErrorelegate& OnContactPickErrorCallback);
+
+	static FOnPickContactSuccessDelegate OnPickContactSuccess;
+	static FOnPickContactErrorelegate OnPickContactError;
+
 };

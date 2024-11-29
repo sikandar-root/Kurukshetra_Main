@@ -33,6 +33,8 @@ public:
 	virtual void CreateNotificationChannel(TSharedPtr<IAndroidGoodiesNotificationChannel> Channel) = 0;
 	virtual void CreateNotificationChannelGroup(TSharedPtr<IAndroidGoodiesNotificationChannelGroup> Group) = 0;
 	virtual bool WasApplicationOpenViaNotification() = 0;
+	virtual void OpenExactAlarmSettingPage() = 0;
+	virtual bool CanScheduleExactNotifications() = 0;
 	virtual void CancelNotification(int ID) = 0;
 	virtual void CancelAllNotifications() = 0;
 	virtual TEnumAsByte<ChannelImportance> GetCurrentImportance() = 0;
@@ -50,3 +52,4 @@ public:
 	virtual void DeleteNotificationChannelGroup(FString GroupId) = 0;
 	virtual void OpenNotificationChannelSettings(FString ChannelId) = 0;
 };
+

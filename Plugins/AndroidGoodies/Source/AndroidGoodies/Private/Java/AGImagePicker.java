@@ -22,9 +22,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
 import android.provider.MediaStore;
-import android.util.Log;
 
-import com.ninevastudios.androidgoodies.pickers.api.CacheLocation;
 import com.ninevastudios.androidgoodies.pickers.api.CameraImagePicker;
 import com.ninevastudios.androidgoodies.pickers.api.ImagePicker;
 import com.ninevastudios.androidgoodies.pickers.api.Picker;
@@ -59,30 +57,48 @@ public class AGImagePicker {
 	private static final String EXTRA_MAX_SIZE = "MaximumSize";
 	private static final String EXTRA_SHOULD_GENERATE_THUMBNAILS = "ShouldGenerateThumbnails";
 	private static final String EXTRAS_PHOTO_OUTPUT_PATH = "EXTRAS_PHOTO_OUTPUT_PATH";
-	private static final String EXTRAS_SHOULD_GET_TEXTURE = "ShouldGetTexture";
+	private static final String EXTRAS_IS_TEXTURE_ONLY_PICKER = "ShouldGetTexture";
 	private static final String EXTRAS_ALLOW_MULTIPLE = "AllowMultiple";
 	private static final int UNUSED = -1;
 
-	private static Activity _activity;
-	private static ImagePicker imagePicker;
 	private static final String FILE_KEY = "ANDROID_GOODIES_PREFS";
 
 	@Keep
 	public static void pickImage(Activity activity, int quality, int maximumSize, boolean shouldGenerateThumbnails, boolean shouldGetTexture, boolean allowMultiple) {
-		_activity = activity;
-		startGoodiesActivity(activity, quality, maximumSize, shouldGenerateThumbnails, shouldGetTexture, allowMultiple, Picker.PICK_IMAGE_DEVICE);
+		NinevaUtils.logMethodCall("pickImage");
+		persistImagePickerSettings(maximumSize, shouldGenerateThumbnails, shouldGetTexture, allowMultiple, quality, activity);
+
+		ImagePickerCallback callback = shouldGetTexture ? createTexturePickerCallback(activity) : chosenImagePickerCallback;
+		ImagePicker imagePicker = AGImagePickerUtils.createImagePicker(activity, callback, maximumSize, shouldGenerateThumbnails, shouldGetTexture, quality);
+
+		if (allowMultiple) {
+			imagePicker.allowMultiple();
+		}
+		imagePicker.pickImage();
 	}
 
 	@Keep
 	public static void takePhoto(Activity activity, int maximumSize, boolean shouldGenerateThumbnails, boolean shouldGetTexture) {
-		_activity = activity;
-		startGoodiesActivity(activity, UNUSED, maximumSize, shouldGenerateThumbnails, shouldGetTexture, false, Picker.PICK_IMAGE_CAMERA);
+		NinevaUtils.logMethodCall("takePhoto");
+		persistImagePickerSettings(maximumSize, shouldGenerateThumbnails, shouldGetTexture, false, 100, activity);
+
+		ImagePickerCallback callback = shouldGetTexture ? createTexturePickerCallback(activity) : chosenImagePickerCallback;
+		CameraImagePicker picker = AGImagePickerUtils.createCameraImagePicker(activity, callback, maximumSize, shouldGenerateThumbnails, shouldGetTexture, 100);
+
+		String photoOutputPath = picker.pickImage();
+		if (photoOutputPath == null) {
+			onImageError("Taking photo failed");
+			return;
+		}
+
+		// Persist the path reinitialize the picker later
+		getPrefs(activity).edit().putString(EXTRAS_PHOTO_OUTPUT_PATH, photoOutputPath).apply();
 	}
 
 	@SuppressLint("ObsoleteSdkInt")
 	@Keep
 	public static void saveImageToGallery(Activity activity, byte[] buffer, String fileName, int width, int height) {
-		NinevaLogUtils.logMethodCall("saveImageToGallery");
+		NinevaUtils.logMethodCall("saveImageToGallery");
 		Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
 		ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
 		bitmap.copyPixelsFromBuffer(byteBuffer);
@@ -95,7 +111,7 @@ public class AGImagePicker {
 	}
 
 	private static void saveImageAndroidQ(Context context, String fileName, Bitmap bitmap) {
-		NinevaLogUtils.logMethodCall("saveImageAndroidQ");
+		NinevaUtils.logMethodCall("saveImageAndroidQ");
 
 		ContentValues cv = new ContentValues();
 		cv.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName + ".png");
@@ -122,11 +138,11 @@ public class AGImagePicker {
 	}
 
 	private static void saveImagePreAndroidQ(Activity activity, String fileName, Bitmap bitmap) {
-		NinevaLogUtils.logMethodCall("saveImagePreAndroidQ");
+		NinevaUtils.logMethodCall("saveImagePreAndroidQ");
 
 		File root = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 		File file = new File(root, fileName + ".png");
-		Log.d("Goodies", file.getAbsolutePath());
+		NinevaUtils.log("File path: " + file.getAbsolutePath());
 		try {
 			FileOutputStream out = new FileOutputStream(file);
 			bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
@@ -149,86 +165,34 @@ public class AGImagePicker {
 		}
 	}
 
-	@Keep
-	public static void pickImageInternal(Intent intent, Activity context, int quality) {
-		NinevaLogUtils.logMethodCall("pickImageInternal");
-
-		persistImagePickerSettings(intent, context);
-
-		imagePicker = new ImagePicker(context);
-		imagePicker.setCacheLocation(CacheLocation.INTERNAL_APP_DIR);
-		if (intent.getBooleanExtra(EXTRAS_SHOULD_GET_TEXTURE, false)) {
-			imagePicker.setImagePickerCallback(texturePickerCallback);
-		} else {
-			imagePicker.setImagePickerCallback(chosenImagePickerCallback);
-		}
-		if (intent.getBooleanExtra(EXTRAS_ALLOW_MULTIPLE, false)) {
-			imagePicker.allowMultiple();
-		}
-		imagePicker.setQuality(quality);
-		imagePicker.pickImage();
-	}
-
-	@Keep
-	public static void pickImageFromCameraInternal(Intent intent, Activity context) {
-		NinevaLogUtils.logMethodCall("pickImageFromCameraInternal");
-
-		CameraImagePicker picker = new CameraImagePicker(context);
-		picker.setCacheLocation(CacheLocation.INTERNAL_APP_DIR);
-		if (intent.getBooleanExtra(EXTRAS_SHOULD_GET_TEXTURE, false)) {
-			picker.setImagePickerCallback(texturePickerCallback);
-		} else {
-			picker.setImagePickerCallback(chosenImagePickerCallback);
-		}
-
-		String outputPath = picker.pickImage();
-		if (outputPath == null) {
-
-			onImageError("Taking photo failed");
-			return;
-		}
-
-		intent.putExtra(EXTRAS_PHOTO_OUTPUT_PATH, outputPath);
-		persistImagePickerSettings(intent, context);
-	}
-
-	static void handlePhotoReceived(int requestCode, int resultCode, Intent data, AndroidGoodiesActivity activity) {
-		NinevaLogUtils.logMethodCall("handlePhotoReceived");
+	static void handlePhotoReceived(int requestCode, int resultCode, Intent data, Activity activity) {
+		NinevaUtils.logMethodCall("handlePhotoReceived");
 
 		if (resultCode != Activity.RESULT_OK) {
 			onImageError("Activity result is not OK.");
 			return;
 		}
 
-		ImagePickerImpl picker;
-		if (requestCode == Picker.PICK_IMAGE_DEVICE) {
-			picker = new ImagePicker(activity);
-		} else {
-			picker = new CameraImagePicker(activity);
-		}
+		ImagePickerCallback callback = isTextureOnlyPicker(activity) ? createTexturePickerCallback(activity) : chosenImagePickerCallback;
+		ImagePickerImpl picker = requestCode == Picker.PICK_IMAGE_DEVICE ?
+				AGImagePickerUtils.createImagePicker(activity, callback, getMaxImageSize(activity), shouldGenerateThumbnails(activity), isTextureOnlyPicker(activity), getQuality(activity)) :
+				AGImagePickerUtils.createCameraImagePicker(activity, callback, getMaxImageSize(activity), shouldGenerateThumbnails(activity), isTextureOnlyPicker(activity), getQuality(activity));
 
-		configureImagePicker(activity, picker);
-		picker.setCacheLocation(CacheLocation.INTERNAL_APP_DIR);
-
-		if (getPrefs(activity).getBoolean(EXTRAS_SHOULD_GET_TEXTURE, false)) {
-			picker.setImagePickerCallback(texturePickerCallback);
-		} else {
-			picker.setImagePickerCallback(chosenImagePickerCallback);
-		}
+		picker.reinitialize(getPhotoOutputPath(activity));
 		picker.submit(data);
 	}
 
 	@NonNull
-	private static ImagePickerCallback chosenImagePickerCallback = new ImagePickerCallback() {
+	private static final ImagePickerCallback chosenImagePickerCallback = new ImagePickerCallback() {
 		@Override
 		public void onImagesChosen(List<ChosenImage> images) {
-			NinevaLogUtils.logMethodCall("onImagesChosen");
+			NinevaUtils.logMethodCall("onImagesChosen");
 			if (images.isEmpty()) {
 				onImageError("Image array is empty.");
 				return;
 			}
 
-			NinevaLogUtils.log("onImagesChosen:Array not empty");
+			NinevaUtils.log("onImagesChosen:Array not empty");
 			onImagesPicked(images.toArray(new ChosenImage[0]));
 		}
 
@@ -239,54 +203,52 @@ public class AGImagePicker {
 	};
 
 	@NonNull
-	private static ImagePickerCallback texturePickerCallback = new ImagePickerCallback() {
-		@Override
-		public void onImagesChosen(List<ChosenImage> images) {
-			NinevaLogUtils.logMethodCall("onImagesChosen");
+	private static ImagePickerCallback createTexturePickerCallback(final Activity activity) {
+		return new ImagePickerCallback() {
+			@Override
+			public void onImagesChosen(List<ChosenImage> images) {
+				NinevaUtils.logMethodCall("onImagesChosen");
 
-			if (images.isEmpty()) {
-				onImageError("Image array is empty.");
-				return;
-			}
-
-			NinevaLogUtils.log("onImagesChosen:Array not empty");
-			ChosenImage img = images.get(0);
-
-			final int width = img.getWidth();
-			final int height = img.getHeight();
-
-			if (img.getWidth() == 0 || img.getHeight() == 0) {
-				onImageError("Image width or height is 0.");
-				return;
-			}
-
-			Log.d("AndroidGoodies", "Image has height and width");
-
-			final String path = img.getOriginalPath();
-			if (path.length() == 0) {
-				onImageError("Image path is empty.");
-				return;
-			}
-			Log.d("AndroidGoodies", "Image path is not empty");
-
-			_activity.runOnUiThread(new Runnable() {
-				@Override
-				public void run() {
-					Bitmap bm = BitmapFactory.decodeFile(path);
-					Bitmap bitmap = rotate(bm, path);
-
-					onImageReady(getBitmapBytes(bitmap), bitmap.getWidth(), bitmap.getHeight());
-
-					bitmap.recycle();
+				if (images.isEmpty()) {
+					onImageError("Image array is empty.");
+					return;
 				}
-			});
-		}
 
-		@Override
-		public void onError(String message) {
-			onImageError(message);
-		}
-	};
+				ChosenImage img = images.get(0);
+
+				final int width = img.getWidth();
+				final int height = img.getHeight();
+
+				if (img.getWidth() == 0 || img.getHeight() == 0) {
+					onImageError("Image width or height is 0.");
+					return;
+				}
+
+				final String path = img.getOriginalPath();
+				if (path.length() == 0) {
+					onImageError("Image path is empty.");
+					return;
+				}
+
+				activity.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						Bitmap bm = BitmapFactory.decodeFile(path);
+						Bitmap bitmap = rotate(bm, path);
+
+						onImageReady(getBitmapBytes(bitmap), bitmap.getWidth(), bitmap.getHeight());
+
+						bitmap.recycle();
+					}
+				});
+			}
+
+			@Override
+			public void onError(String message) {
+				onImageError(message);
+			}
+		};
+	}
 
 	static Bitmap rotate(Bitmap bitmap, String path) {
 		ExifInterface ei = null;
@@ -334,20 +296,13 @@ public class AGImagePicker {
 		}
 
 		Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
+		rotate(bitmap, imagePath);
 		int width = bitmap.getWidth();
 		int height = bitmap.getHeight();
 
 		onImageReady(getBitmapBytes(bitmap), width, height);
 
 		bitmap.recycle();
-	}
-
-	private static void configureImagePicker(Activity activity, ImagePickerImpl picker) {
-		int maxSize = getMaxImageSize(activity);
-		picker.ensureMaxSize(maxSize, maxSize);
-		picker.shouldGenerateThumbnails(shouldGenerateThumbnails(activity));
-		picker.shouldGenerateTexture(shouldGenerateTexture(activity));
-		picker.reinitialize(getPhotoOutputPath(activity));
 	}
 
 	private static int getMaxImageSize(Activity context) {
@@ -358,8 +313,8 @@ public class AGImagePicker {
 		return getPrefs(activity).getBoolean(EXTRA_SHOULD_GENERATE_THUMBNAILS, true);
 	}
 
-	private static boolean shouldGenerateTexture(Activity activity) {
-		return getPrefs(activity).getBoolean(EXTRAS_SHOULD_GET_TEXTURE, false);
+	private static boolean isTextureOnlyPicker(Activity activity) {
+		return getPrefs(activity).getBoolean(EXTRAS_IS_TEXTURE_ONLY_PICKER, false);
 	}
 
 	private static SharedPreferences getPrefs(Activity context) {
@@ -370,29 +325,18 @@ public class AGImagePicker {
 		return getPrefs(context).getString(EXTRAS_PHOTO_OUTPUT_PATH, null);
 	}
 
+	private static int getQuality(Activity context) {
+		return getPrefs(context).getInt(EXTRA_QUALITY, 100);
+	}
+
 	@SuppressLint("ApplySharedPref")
-	private static void persistImagePickerSettings(Intent data, Activity context) {
+	private static void persistImagePickerSettings(int maxSize, boolean generateThumbnails, boolean shouldGetTexture, boolean allowMultiple, int quality, Activity context) {
 		SharedPreferences.Editor editor = getPrefs(context).edit();
-		if (data.hasExtra(EXTRA_MAX_SIZE)) {
-			int maxSize = data.getIntExtra(EXTRA_MAX_SIZE, 0);
-			editor.putInt(EXTRA_MAX_SIZE, maxSize);
-		}
-		if (data.hasExtra(EXTRA_SHOULD_GENERATE_THUMBNAILS)) {
-			boolean genThumbnails = data.getBooleanExtra(EXTRA_SHOULD_GENERATE_THUMBNAILS, true);
-			editor.putBoolean(EXTRA_SHOULD_GENERATE_THUMBNAILS, genThumbnails);
-		}
-		if (data.hasExtra(EXTRAS_SHOULD_GET_TEXTURE)) {
-			boolean getTexture = data.getBooleanExtra(EXTRAS_SHOULD_GET_TEXTURE, false);
-			editor.putBoolean(EXTRAS_SHOULD_GET_TEXTURE, getTexture);
-		}
-		if (data.hasExtra(EXTRAS_ALLOW_MULTIPLE)) {
-			boolean allowMultiple = data.getBooleanExtra(EXTRAS_ALLOW_MULTIPLE, false);
-			editor.putBoolean(EXTRAS_ALLOW_MULTIPLE, allowMultiple);
-		}
-		if (data.hasExtra(EXTRAS_PHOTO_OUTPUT_PATH)) {
-			String photoOutputPath = data.getStringExtra(EXTRAS_PHOTO_OUTPUT_PATH);
-			editor.putString(EXTRAS_PHOTO_OUTPUT_PATH, photoOutputPath);
-		}
+		editor.putInt(EXTRA_MAX_SIZE, 0);
+		editor.putBoolean(EXTRA_SHOULD_GENERATE_THUMBNAILS, generateThumbnails);
+		editor.putBoolean(EXTRAS_IS_TEXTURE_ONLY_PICKER, shouldGetTexture);
+		editor.putBoolean(EXTRAS_ALLOW_MULTIPLE, allowMultiple);
+		editor.putInt(EXTRA_QUALITY, quality);
 		editor.commit();
 	}
 
@@ -406,24 +350,5 @@ public class AGImagePicker {
 		IntBuffer intBuffer = byteBuffer.asIntBuffer();
 		intBuffer.put(colors);
 		return byteBuffer.array();
-	}
-
-	private static void startGoodiesActivity(Activity activity, int quality, int maximumSize,
-											 boolean shouldGenerateThumbnails, boolean shouldGetTexture, boolean allowMultiple, int pickerType) {
-		Intent intent = new Intent(activity, AndroidGoodiesActivity.class);
-		if (quality != UNUSED) {
-			intent.putExtra(EXTRA_QUALITY, quality);
-		}
-
-		if (maximumSize != UNUSED) {
-			intent.putExtra(EXTRA_MAX_SIZE, maximumSize);
-		}
-
-		intent.putExtra(EXTRA_SHOULD_GENERATE_THUMBNAILS, shouldGenerateThumbnails);
-		intent.putExtra(EXTRAS_SHOULD_GET_TEXTURE, shouldGetTexture);
-		intent.putExtra(EXTRAS_ALLOW_MULTIPLE, allowMultiple);
-		intent.putExtra(AndroidGoodiesActivity.EXTRAS_PICKER_TYPE, pickerType);
-
-		activity.startActivity(intent);
 	}
 }

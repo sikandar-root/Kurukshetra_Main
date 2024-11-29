@@ -118,6 +118,16 @@ void AndroidNotificationManager::CreateNotificationChannelGroup(TSharedPtr<IAndr
 	                                        NativeNotificationChannelGroup);
 }
 
+void AndroidNotificationManager::OpenExactAlarmSettingPage()
+{
+	AGMethodCallUtils::CallStaticVoidMethod(NotificationHelperClassName, "requestExactAlarmsPermission", "(Landroid/app/Activity;)V", FJavaWrapper::GameActivityThis);
+}
+
+bool AndroidNotificationManager::CanScheduleExactNotifications()
+{
+	return AGMethodCallUtils::CallStaticBoolMethod(NotificationHelperClassName, "canScheduleExactAlarms", "(Landroid/app/Activity;)Z", FJavaWrapper::GameActivityThis);
+}
+
 bool AndroidNotificationManager::WasApplicationOpenViaNotification()
 {
 	return AGMethodCallUtils::CallStaticBoolMethod(NotificationHelperClassName, "wasAppOpenViaNotification", "()Z");

@@ -8,14 +8,12 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 
 import android.telephony.SmsManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
@@ -125,7 +123,7 @@ public class AGShare {
 		try {
 			launchShareIntent(activity, withChooser, chooserTitle, intent);
 		} catch (Exception e) {
-			NinevaLogUtils.log(e.getMessage());
+			NinevaUtils.log(e.getMessage());
 		}
 	}
 

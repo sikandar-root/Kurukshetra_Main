@@ -7,11 +7,100 @@
 #if PLATFORM_ANDROID
 #include "Android/Utils/AGMethodCallUtils.h"
 #include "Android/Utils/AGArrayConvertor.h"
-
-
 #endif
 
 static const ANSICHAR* AGHardwareClassName = "com/ninevastudios/androidgoodies/AGHardware";
+
+
+FIntPoint UAGHardwareBPL::GetDeviceViewportSizeFullScreen()
+{
+	FIntPoint viewportSize(0, 0);
+#if PLATFORM_ANDROID
+	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
+	jobject viewportArray = AGMethodCallUtils::CallStaticObjectMethod(AGHardwareClassName, "getDeviceViewportSizeFullScreen", "(Landroid/app/Activity;)[I", FJavaWrapper::GameActivityThis);
+	jintArray* intArray = reinterpret_cast<jintArray*>(&viewportArray);
+	jsize length = Env->GetArrayLength(*intArray);
+	jint* viewportValues = Env->GetIntArrayElements(*intArray, 0);
+	if (length == 2)
+	{
+		viewportSize.X = viewportValues[0];
+		viewportSize.Y = viewportValues[1];
+	}
+	Env->ReleaseIntArrayElements(*intArray, viewportValues, 0);
+#endif
+	return viewportSize;
+}
+
+FIntPoint UAGHardwareBPL::GetDeviceViewportSizeAdjusted()
+{
+	FIntPoint viewportSize(0, 0);
+#if PLATFORM_ANDROID
+	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
+	jobject viewportArray = AGMethodCallUtils::CallStaticObjectMethod(AGHardwareClassName, "getDeviceViewportSizeAdjusted", "(Landroid/app/Activity;)[I", FJavaWrapper::GameActivityThis);
+	jintArray* intArray = reinterpret_cast<jintArray*>(&viewportArray);
+	jsize length = Env->GetArrayLength(*intArray);
+	jint* viewportValues = Env->GetIntArrayElements(*intArray, 0);
+	if (length == 2)
+	{
+		viewportSize.X = viewportValues[0];
+		viewportSize.Y = viewportValues[1];
+	}
+	Env->ReleaseIntArrayElements(*intArray, viewportValues, 0);
+#endif
+	return viewportSize;
+}
+
+bool UAGHardwareBPL::HasNotch()
+{
+#if PLATFORM_ANDROID
+	return AGMethodCallUtils::CallStaticBoolMethod(AGHardwareClassName, "hasNotch", "(Landroid/app/Activity;)Z", FJavaWrapper::GameActivityThis);
+#endif
+	return false;
+}
+
+bool UAGHardwareBPL::HasRoundedCorners()
+{
+#if PLATFORM_ANDROID
+	return AGMethodCallUtils::CallStaticBoolMethod(AGHardwareClassName, "hasRoundedCorners", "(Landroid/app/Activity;)Z", FJavaWrapper::GameActivityThis);
+#endif
+	return false;
+}
+int32 UAGHardwareBPL::GetVolumeLevel()
+{
+	int32 volumeLevel = 0;
+#if PLATFORM_ANDROID
+	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
+	jclass AGHardwareClass = FAndroidApplication::FindJavaClass(AGHardwareClassName);
+	jmethodID Method = Env->GetStaticMethodID(AGHardwareClass, "getVolumeLevel", "(Landroid/app/Activity;)I");
+	volumeLevel = Env->CallStaticIntMethod(AGHardwareClass, Method, FJavaWrapper::GameActivityThis);
+	Env->DeleteLocalRef(AGHardwareClass);
+#endif
+	return volumeLevel;
+}
+
+void UAGHardwareBPL::SetVolumeLevel(int32 VolumeLevel)
+{
+#if PLATFORM_ANDROID
+	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
+	jclass AGHardwareClass = FAndroidApplication::FindJavaClass(AGHardwareClassName);
+	jmethodID Method = Env->GetStaticMethodID(AGHardwareClass, "setVolumeLevel", "(Landroid/app/Activity;I)V");
+	Env->CallStaticVoidMethod(AGHardwareClass, Method, FJavaWrapper::GameActivityThis, VolumeLevel);
+	Env->DeleteLocalRef(AGHardwareClass);
+#endif
+}
+
+int32 UAGHardwareBPL::GetMaxVolumeLevel()
+{
+	int32 maxVolumeLevel = 0;
+#if PLATFORM_ANDROID
+	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
+	jclass AGHardwareClass = FAndroidApplication::FindJavaClass(AGHardwareClassName);
+	jmethodID Method = Env->GetStaticMethodID(AGHardwareClass, "getMaxVolumeLevel", "(Landroid/app/Activity;)I");
+	maxVolumeLevel = Env->CallStaticIntMethod(AGHardwareClass, Method, FJavaWrapper::GameActivityThis);
+	Env->DeleteLocalRef(AGHardwareClass);
+#endif
+	return maxVolumeLevel;
+}
 
 void UAGHardwareBPL::EnableFlashlight(bool enable)
 {
@@ -309,115 +398,6 @@ int UAGHardwareBPL::GetBatteryVoltage()
 #endif
 
 	return 0;
-}
-
-FIntPoint UAGHardwareBPL::GetDeviceViewportSizeFullScreen()
-{
-	FIntPoint viewportSize(0, 0);
-#if PLATFORM_ANDROID
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-	jobject viewportArray = AGMethodCallUtils::CallStaticObjectMethod(AGHardwareClassName, "getDeviceViewportSizeFullScreen", "(Landroid/app/Activity;)[I", FJavaWrapper::GameActivityThis);
-	jintArray* intArray = reinterpret_cast<jintArray*>(&viewportArray);
-	jsize length = Env->GetArrayLength(*intArray);
-	jint* viewportValues = Env->GetIntArrayElements(*intArray, 0);
-	if (length == 2)
-	{
-		viewportSize.X = viewportValues[0];
-		viewportSize.Y = viewportValues[1];
-	}
-	Env->ReleaseIntArrayElements(*intArray, viewportValues, 0);
-#endif
-	return viewportSize;
-}
-
-FIntPoint UAGHardwareBPL::GetDeviceViewportSizeAdjusted()
-{
-	FIntPoint viewportSize(0, 0);
-#if PLATFORM_ANDROID
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-	jobject viewportArray = AGMethodCallUtils::CallStaticObjectMethod(AGHardwareClassName, "getDeviceViewportSizeAdjusted", "(Landroid/app/Activity;)[I", FJavaWrapper::GameActivityThis);
-	jintArray* intArray = reinterpret_cast<jintArray*>(&viewportArray);
-	jsize length = Env->GetArrayLength(*intArray);
-	jint* viewportValues = Env->GetIntArrayElements(*intArray, 0);
-	if (length == 2)
-	{
-		viewportSize.X = viewportValues[0];
-		viewportSize.Y = viewportValues[1];
-	}
-	Env->ReleaseIntArrayElements(*intArray, viewportValues, 0);
-#endif
-	return viewportSize;
-}
-
-bool UAGHardwareBPL::HasNotch()
-{
-#if PLATFORM_ANDROID
-	return AGMethodCallUtils::CallStaticBoolMethod(AGHardwareClassName, "hasNotch", "(Landroid/app/Activity;)Z", FJavaWrapper::GameActivityThis);
-#endif
-	return false;
-}
-
-bool UAGHardwareBPL::HasRoundedCorners()
-{
-#if PLATFORM_ANDROID
-	return AGMethodCallUtils::CallStaticBoolMethod(AGHardwareClassName, "hasRoundedCorners", "(Landroid/app/Activity;)Z", FJavaWrapper::GameActivityThis);
-#endif
-	return false;
-}
-
-int32 UAGHardwareBPL::GetVolumeLevel()
-{
-	int32 volumeLevel = 0;
-#if PLATFORM_ANDROID
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-	jclass AGHardwareClass = FAndroidApplication::FindJavaClass(AGHardwareClassName);
-	jmethodID Method = Env->GetStaticMethodID(AGHardwareClass, "getVolumeLevel", "(Landroid/app/Activity;)I");
-	volumeLevel = Env->CallStaticIntMethod(AGHardwareClass, Method, FJavaWrapper::GameActivityThis);
-	Env->DeleteLocalRef(AGHardwareClass);
-#endif
-	return volumeLevel;
-}
-
-void UAGHardwareBPL::SetVolumeLevel(int32 VolumeLevel)
-{
-#if PLATFORM_ANDROID
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-	jclass AGHardwareClass = FAndroidApplication::FindJavaClass(AGHardwareClassName);
-	jmethodID Method = Env->GetStaticMethodID(AGHardwareClass, "setVolumeLevel", "(Landroid/app/Activity;I)V");
-	Env->CallStaticVoidMethod(AGHardwareClass, Method, FJavaWrapper::GameActivityThis, VolumeLevel);
-	Env->DeleteLocalRef(AGHardwareClass);
-#endif
-}
-
-int32 UAGHardwareBPL::GetMaxVolumeLevel()
-{
-	int32 maxVolumeLevel = 0;
-#if PLATFORM_ANDROID
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-	jclass AGHardwareClass = FAndroidApplication::FindJavaClass(AGHardwareClassName);
-	jmethodID Method = Env->GetStaticMethodID(AGHardwareClass, "getMaxVolumeLevel", "(Landroid/app/Activity;)I");
-	maxVolumeLevel = Env->CallStaticIntMethod(AGHardwareClass, Method, FJavaWrapper::GameActivityThis);
-	Env->DeleteLocalRef(AGHardwareClass);
-#endif
-	return maxVolumeLevel;
-}
-
-void UAGHardwareBPL::SendNotification(const FString& Title, const FString& Text)
-{
-#if PLATFORM_ANDROID
-	JNIEnv* Env = FAndroidApplication::GetJavaEnv();
-	jclass AGHardwareClass = FAndroidApplication::FindJavaClass(AGHardwareClassName);
-	jmethodID Method = Env->GetStaticMethodID(AGHardwareClass, "sendNotification", "(Landroid/app/Activity;Ljava/lang/String;Ljava/lang/String;)V");
-
-	jstring JTitle = Env->NewStringUTF(TCHAR_TO_UTF8(*Title));
-	jstring JText = Env->NewStringUTF(TCHAR_TO_UTF8(*Text));
-
-	Env->CallStaticVoidMethod(AGHardwareClass, Method, FJavaWrapper::GameActivityThis, JTitle, JText);
-
-	Env->DeleteLocalRef(JTitle);
-	Env->DeleteLocalRef(JText);
-	Env->DeleteLocalRef(AGHardwareClass);
-#endif
 }
 
 #if PLATFORM_ANDROID

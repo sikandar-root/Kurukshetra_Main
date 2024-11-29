@@ -22,36 +22,36 @@ public:
 	/**
 	* Get orientation of the actual image.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|ImagePicker")
+	UFUNCTION(BlueprintPure, Category = "AndroidGoodies|ImagePicker")
 	int GetOrientation();
 
 	/**
 	* Get the path to the thumbnail(big) of the image.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|ImagePicker")
+	UFUNCTION(BlueprintPure, Category = "AndroidGoodies|ImagePicker")
 	FString GetThumbnailPath();
 
 	/**
 	* Get the path to the thumbnail(small) of the image.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|ImagePicker")
+	UFUNCTION(BlueprintPure, Category = "AndroidGoodies|ImagePicker")
 	FString GetThumbnailSmallPath();
 
 	/**
 	* Get the image width.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|ImagePicker")
+	UFUNCTION(BlueprintPure, Category = "AndroidGoodies|ImagePicker")
 	int GetWidth();
 
 	/**
 	* Get the image height.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|ImagePicker")
+	UFUNCTION(BlueprintPure, Category = "AndroidGoodies|ImagePicker")
 	int GetHeight();
 
 	/**
 	* Get Orientation user friendly label.
 	*/
-	UFUNCTION(BlueprintCallable, Category = "AndroidGoodies|ImagePicker")
+	UFUNCTION(BlueprintPure, Category = "AndroidGoodies|ImagePicker")
 	FString GetOrientationName();
 };

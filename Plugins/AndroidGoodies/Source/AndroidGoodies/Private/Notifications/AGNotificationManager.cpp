@@ -115,6 +115,26 @@ void UAGNotificationManager::SetCurrentInterruptionFilter(InterruptionFilter Fil
 	NotificationManagerImpl->SetCurrentInterruptionFilter(Filter);
 }
 
+bool UAGNotificationManager::CanScheduleExactNotifications()
+{
+	if (!IsValid())
+	{
+		return false;
+	}
+
+	return NotificationManagerImpl->CanScheduleExactNotifications();
+}
+
+void UAGNotificationManager::OpenExactAlarmSettingPage()
+{
+	if (!IsValid())
+	{
+		return;
+	}
+
+	NotificationManagerImpl->OpenExactAlarmSettingPage();
+}
+
 void UAGNotificationManager::ScheduleNotification(UAGNotification* Notification, int ID, FTimespan NotifyAfter)
 {
 	if (!IsValid())

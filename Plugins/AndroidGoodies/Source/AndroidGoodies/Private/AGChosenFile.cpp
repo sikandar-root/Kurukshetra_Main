@@ -82,14 +82,8 @@ FString UAGChosenFile::GetDisplayName()
 
 #if PLATFORM_ANDROID
 	jobject CreatedAtDate = AGMethodCallUtils::CallObjectMethod(JavaChosenFileObject, "getCreatedAt", "()Ljava/util/Date;");
-	int Year = AGMethodCallUtils::CallIntMethod(CreatedAtDate, "getYear", "()I");
-	int Month = AGMethodCallUtils::CallIntMethod(CreatedAtDate, "getMonth", "()I");
-	int Day = AGMethodCallUtils::CallIntMethod(CreatedAtDate, "getDay", "()I");
-	int Hours = AGMethodCallUtils::CallIntMethod(CreatedAtDate, "getHours", "()I");
-	int Minutes = AGMethodCallUtils::CallIntMethod(CreatedAtDate, "getMinutes", "()I");
-	int Seconds = AGMethodCallUtils::CallIntMethod(CreatedAtDate, "getSeconds", "()I");
-
-	CreatedAt = FDateTime(Year, Month, Day, Hours, Minutes, Seconds);
+	int64 SecondsSinceEpoch = AGMethodCallUtils::CallLongMethod(CreatedAtDate, "getTime", "()J") / 1000;
+	CreatedAt = FDateTime::FromUnixTimestamp(SecondsSinceEpoch);
 #endif
 
 	 return CreatedAt;

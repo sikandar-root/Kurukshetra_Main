@@ -1,10 +1,10 @@
 // Copyright (c) 2018 Nineva Studios
 
 #include "AGDateTimePickerBPL.h"
-#include "Android/Utils/AGMediaUtils.h"
 #include "Async/Async.h"
 
 #if PLATFORM_ANDROID
+#include "Android/Utils/AGMediaUtils.h"
 #include "Android/AndroidApplication.h"
 #include "Android/AndroidJNI.h"
 #include "Android/Utils/AGMethodCallUtils.h"

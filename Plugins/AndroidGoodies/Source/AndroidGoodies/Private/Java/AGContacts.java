@@ -7,185 +7,227 @@ import android.app.Activity;
 import android.content.ContentProviderOperation;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Phone;
+
 import androidx.annotation.Keep;
+
 import android.telephony.TelephonyManager;
 import android.util.Log;
+
+import com.ninevastudios.androidgoodies.pickers.api.CacheLocation;
+import com.ninevastudios.androidgoodies.pickers.api.ContactPicker;
+import com.ninevastudios.androidgoodies.pickers.api.callbacks.ContactPickerCallback;
+import com.ninevastudios.androidgoodies.pickers.api.entity.ChosenContact;
+import com.ninevastudios.androidgoodies.pickers.api.entity.ChosenImage;
 
 import java.util.ArrayList;
 
 @Keep
 public class AGContacts {
-	private static final String DISPLAY_NAME_COLUMN_NAME = "DISPLAY_NAME";
+  @Keep
+  public static native void onContactPicked(ChosenContact contact);
 
-	@Keep
-	@SuppressLint({"HardwareIds", "MissingPermission"})
-	public static String getSimPhoneNumber(Activity activity) {
-		TelephonyManager tMgr = (TelephonyManager) activity.getSystemService(Context.TELEPHONY_SERVICE);
-		try {
-			String result = tMgr.getLine1Number();
-			return result == null ? "" : result;
-		} catch (Exception e) {
-			Log.d("AndroidGoodies", "Could not get SIM number: " + e.getMessage());
-			return "";
-		}
-	}
+  @Keep
+  public static native void onContactPickError(String error);
 
-	@Keep
-	public static AGContact[] fetchContactsWithName(Activity activity, String name) {
-		ContentResolver resolver = activity.getContentResolver();
-		Cursor contact = resolver.query(ContactsContract.Contacts.CONTENT_URI, null,
-				DISPLAY_NAME_COLUMN_NAME + " = '" + name + "'", null, null);
+  private static final String DISPLAY_NAME_COLUMN_NAME = "DISPLAY_NAME";
 
-		if (contact == null) {
-			return new AGContact[0];
-		}
+  @Keep
+  @SuppressLint({ "HardwareIds", "MissingPermission" })
+  public static String getSimPhoneNumber(Activity activity) {
+    TelephonyManager tMgr = (TelephonyManager) activity.getSystemService(Context.TELEPHONY_SERVICE);
+    try {
+      String result = tMgr.getLine1Number();
+      return result == null ? "" : result;
+    } catch (Exception e) {
+      Log.d("AndroidGoodies", "Could not get SIM number: " + e.getMessage());
+      return "";
+    }
+  }
 
-		ArrayList<AGContact> contactsArray = new ArrayList<>();
+  @Keep
+  public static AGContact[] fetchContactsWithName(Activity activity, String name) {
+    ContentResolver resolver = activity.getContentResolver();
+    Cursor contact = resolver.query(ContactsContract.Contacts.CONTENT_URI, null,
+        DISPLAY_NAME_COLUMN_NAME + " = '" + name + "'", null, null);
 
-		while (contact.moveToNext()) {
-			String contactId = contact.getString(contact.getColumnIndex(ContactsContract.Contacts._ID));
-			AGContact agContact = new AGContact();
-			agContact.DisplayName = contact.getString(contact.getColumnIndex(DISPLAY_NAME_COLUMN_NAME));
-			ArrayList<String> phonesList = new ArrayList<>();
+    if (contact == null) {
+      return new AGContact[0];
+    }
 
-			Cursor phones = resolver.query(Phone.CONTENT_URI, null,
-					Phone.CONTACT_ID + " = " + contactId, null, null);
-			if (phones != null) {
-				while (phones.moveToNext()) {
-					phonesList.add(phones.getString(phones.getColumnIndex(Phone.NUMBER)));
-				}
+    ArrayList<AGContact> contactsArray = new ArrayList<>();
 
-				phones.close();
-			}
+    while (contact.moveToNext()) {
+      String contactId = contact.getString(contact.getColumnIndex(ContactsContract.Contacts._ID));
+      AGContact agContact = new AGContact();
+      agContact.DisplayName = contact.getString(contact.getColumnIndex(DISPLAY_NAME_COLUMN_NAME));
+      ArrayList<String> phonesList = new ArrayList<>();
 
-			agContact.PhoneNumbers = phonesList.toArray(new String[0]);
-			contactsArray.add(agContact);
-		}
-		contact.close();
+      Cursor phones = resolver.query(Phone.CONTENT_URI, null,
+          Phone.CONTACT_ID + " = " + contactId, null, null);
+      if (phones != null) {
+        while (phones.moveToNext()) {
+          phonesList.add(phones.getString(phones.getColumnIndex(Phone.NUMBER)));
+        }
 
-		return contactsArray.toArray(new AGContact[0]);
-	}
+        phones.close();
+      }
 
-	@Keep
-	public static AGContact[] fetchContactsWithNumber(Activity activity, String number) {
-		ContentResolver resolver = activity.getContentResolver();
-		Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
-		Cursor contact = resolver.query(uri, null, null, null, null);
+      agContact.PhoneNumbers = phonesList.toArray(new String[0]);
+      contactsArray.add(agContact);
+    }
+    contact.close();
 
-		if (contact == null) {
-			return new AGContact[0];
-		}
+    return contactsArray.toArray(new AGContact[0]);
+  }
 
-		ArrayList<AGContact> contactsArray = new ArrayList<>();
+  @Keep
+  public static AGContact[] fetchContactsWithNumber(Activity activity, String number) {
+    ContentResolver resolver = activity.getContentResolver();
+    Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(number));
+    Cursor contact = resolver.query(uri, null, null, null, null);
 
-		while (contact.moveToNext()) {
-			String contactId = contact.getString(contact.getColumnIndex(ContactsContract.Contacts._ID));
-			AGContact agContact = new AGContact();
-			agContact.DisplayName = contact.getString(contact.getColumnIndex(DISPLAY_NAME_COLUMN_NAME));
-			ArrayList<String> phonesList = new ArrayList<>();
+    if (contact == null) {
+      return new AGContact[0];
+    }
 
-			Cursor phones = resolver.query(Phone.CONTENT_URI, null,
-					Phone.CONTACT_ID + " = " + contactId, null, null);
-			if (phones != null) {
-				while (phones.moveToNext()) {
-					phonesList.add(phones.getString(phones.getColumnIndex(Phone.NUMBER)));
+    ArrayList<AGContact> contactsArray = new ArrayList<>();
 
-					agContact.PhoneNumbers = phonesList.toArray(new String[0]);
-					contactsArray.add(agContact);
-				}
+    while (contact.moveToNext()) {
+      String contactId = contact.getString(contact.getColumnIndex(ContactsContract.Contacts._ID));
+      AGContact agContact = new AGContact();
+      agContact.DisplayName = contact.getString(contact.getColumnIndex(DISPLAY_NAME_COLUMN_NAME));
+      ArrayList<String> phonesList = new ArrayList<>();
 
-				phones.close();
-			}
-		}
+      Cursor phones = resolver.query(Phone.CONTENT_URI, null,
+          Phone.CONTACT_ID + " = " + contactId, null, null);
+      if (phones != null) {
+        while (phones.moveToNext()) {
+          phonesList.add(phones.getString(phones.getColumnIndex(Phone.NUMBER)));
 
-		contact.close();
+          agContact.PhoneNumbers = phonesList.toArray(new String[0]);
+          contactsArray.add(agContact);
+        }
 
-		return contactsArray.toArray(new AGContact[0]);
-	}
+        phones.close();
+      }
+    }
 
-	@Keep
-	public static AGContact[] fetchAllContacts(Activity activity) {
-		ContentResolver resolver = activity.getContentResolver();
-		Cursor contacts = resolver.query(ContactsContract.Contacts.CONTENT_URI,
-				null, null, null, null);
+    contact.close();
 
-		if (contacts == null) {
-			return new AGContact[0];
-		}
+    return contactsArray.toArray(new AGContact[0]);
+  }
 
-		ArrayList<AGContact> contactsArray = new ArrayList<>();
+  @Keep
+  public static AGContact[] fetchAllContacts(Activity activity) {
+    ContentResolver resolver = activity.getContentResolver();
+    Cursor contacts = resolver.query(ContactsContract.Contacts.CONTENT_URI,
+        null, null, null, null);
 
-		while (contacts.moveToNext()) {
-			String contactId = contacts.getString(contacts.getColumnIndex(ContactsContract.Contacts._ID));
-			AGContact agContact = new AGContact();
-			agContact.DisplayName = contacts.getString(contacts.getColumnIndex(DISPLAY_NAME_COLUMN_NAME));
-			ArrayList<String> phonesList = new ArrayList<>();
+    if (contacts == null) {
+      return new AGContact[0];
+    }
 
-			Cursor phones = resolver.query(Phone.CONTENT_URI, null,
-					Phone.CONTACT_ID + " = " + contactId, null, null);
-			if (phones != null) {
-				while (phones.moveToNext()) {
-					phonesList.add(phones.getString(phones.getColumnIndex(Phone.NUMBER)));
+    ArrayList<AGContact> contactsArray = new ArrayList<>();
 
-					agContact.PhoneNumbers = phonesList.toArray(new String[0]);
-					contactsArray.add(agContact);
-				}
+    while (contacts.moveToNext()) {
+      String contactId = contacts.getString(contacts.getColumnIndex(ContactsContract.Contacts._ID));
+      AGContact agContact = new AGContact();
+      agContact.DisplayName = contacts.getString(contacts.getColumnIndex(DISPLAY_NAME_COLUMN_NAME));
+      ArrayList<String> phonesList = new ArrayList<>();
 
-				phones.close();
-			}
-		}
+      Cursor phones = resolver.query(Phone.CONTENT_URI, null,
+          Phone.CONTACT_ID + " = " + contactId, null, null);
+      if (phones != null) {
+        while (phones.moveToNext()) {
+          phonesList.add(phones.getString(phones.getColumnIndex(Phone.NUMBER)));
 
-		contacts.close();
+          agContact.PhoneNumbers = phonesList.toArray(new String[0]);
+          contactsArray.add(agContact);
+        }
 
-		return contactsArray.toArray(new AGContact[0]);
-	}
+        phones.close();
+      }
+    }
 
-	@Keep
-	public static boolean addContact(Activity activity, AGContact contact) {
-		try {
-			ContentResolver resolver = activity.getContentResolver();
+    contacts.close();
 
-			ArrayList<ContentProviderOperation> operations =
-					new ArrayList<>();
+    return contactsArray.toArray(new AGContact[0]);
+  }
 
-			operations.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
-					.withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
-					.withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
-					.build());
+  @Keep
+  public static boolean addContact(Activity activity, AGContact contact) {
+    try {
+      ContentResolver resolver = activity.getContentResolver();
 
-			setContactName(operations, contact.DisplayName);
+      ArrayList<ContentProviderOperation> operations = new ArrayList<>();
 
-			for (int i = 1; i < contact.PhoneNumbers.length; i++) {
-				addContactNumber(operations, contact.PhoneNumbers[i]);
-			}
+      operations.add(ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
+          .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, null)
+          .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, null)
+          .build());
 
-			resolver.applyBatch(ContactsContract.AUTHORITY, operations);
+      setContactName(operations, contact.DisplayName);
 
-			return true;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-	}
+      for (int i = 1; i < contact.PhoneNumbers.length; i++) {
+        addContactNumber(operations, contact.PhoneNumbers[i]);
+      }
 
-	private static void setContactName(ArrayList<ContentProviderOperation> operations, String userName) {
-		operations.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-				.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
-				.withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
-				.withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, userName)
-				.build());
-	}
+      resolver.applyBatch(ContactsContract.AUTHORITY, operations);
 
-	private static void addContactNumber(ArrayList<ContentProviderOperation> operations, String number) {
-		operations.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-				.withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
-				.withValue(ContactsContract.Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
-				.withValue(Phone.NUMBER, number)
-				.withValue(ContactsContract.CommonDataKinds.Phone.TYPE, Phone.TYPE_MOBILE)
-				.build());
-	}
+      return true;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return false;
+    }
+  }
+
+  public static void pickContact(Activity activity) {
+    ContactPicker picker = new ContactPicker(activity);
+    picker.pickContact();
+  }
+
+  static void handleContactReceived(int requestCode, int resultCode, Intent data, Activity activity) {
+    if (resultCode != Activity.RESULT_OK) {
+      onContactPickError("cancelled");
+      return;
+    }
+
+    ContactPicker picker = new ContactPicker(activity);
+    picker.setCacheLocation(CacheLocation.INTERNAL_APP_DIR);
+    picker.setContactPickerCallback(new ContactPickerCallback() {
+      @Override
+      public void onContactChosen(ChosenContact contact) {
+        NinevaUtils.log("Picked contact: " + contact.toString());
+        onContactPicked(contact);
+      }
+
+      @Override
+      public void onError(String message) {
+        onContactPickError(message);
+      }
+    });
+    picker.submit(data);
+  }
+
+  private static void setContactName(ArrayList<ContentProviderOperation> operations, String userName) {
+    operations.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+        .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+        .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.CommonDataKinds.StructuredName.CONTENT_ITEM_TYPE)
+        .withValue(ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME, userName)
+        .build());
+  }
+
+  private static void addContactNumber(ArrayList<ContentProviderOperation> operations, String number) {
+    operations.add(ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+        .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+        .withValue(ContactsContract.Data.MIMETYPE, Phone.CONTENT_ITEM_TYPE)
+        .withValue(Phone.NUMBER, number)
+        .withValue(ContactsContract.CommonDataKinds.Phone.TYPE, Phone.TYPE_MOBILE)
+        .build());
+  }
 }

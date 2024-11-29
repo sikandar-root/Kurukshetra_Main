@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 2020200,
-	"VersionName": "2.2.2",
+	"Version": 2020700,
+	"VersionName": "2.2.7",
 	"FriendlyName": "Android Goodies",
 	"Description": "Android Goodies is a collection of Android native methods for your Unreal Engine project.",
 	"Category": "Code Plugins",

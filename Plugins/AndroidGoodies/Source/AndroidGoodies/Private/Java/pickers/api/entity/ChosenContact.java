@@ -87,18 +87,20 @@ public class ChosenContact implements Parcelable{
 
     /**
      * Returns the phone numbers of the chosen contact
+     *
      * @return
      */
-    public List<String> getPhones() {
-        return phones;
+    public String[] getPhones() {
+        return phones.toArray(new String[0]);
     }
 
     /**
      * Returns the list of emails of the chosen contact
+     *
      * @return
      */
-    public List<String> getEmails() {
-        return emails;
+    public String[] getEmails() {
+        return emails.toArray(new String[0]);
     }
 
     public void addEmail(String email) {

@@ -17,6 +17,8 @@ public:
 	virtual void Notify(TSharedPtr<IAndroidGoodiesNotification> Notification, int ID) override;
 	virtual void CreateNotificationChannel(TSharedPtr<IAndroidGoodiesNotificationChannel> Channel) override;
 	virtual void CreateNotificationChannelGroup(TSharedPtr<IAndroidGoodiesNotificationChannelGroup> Group) override;
+	virtual void OpenExactAlarmSettingPage() override;
+	virtual bool CanScheduleExactNotifications() override;
 	virtual bool WasApplicationOpenViaNotification() override;
 	virtual void CancelNotification(int ID) override;
 	virtual void CancelAllNotifications() override;

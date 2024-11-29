@@ -6,6 +6,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -146,6 +147,7 @@ public class FileProcessorThread extends Thread {
             return;
         }
         try {
+            context.grantUriPermission(context.getPackageName(), Uri.parse(file.getQueryUri()), Intent.FLAG_GRANT_READ_URI_PERMISSION);
             File inputFile = new File(file.getOriginalPath());
             File copyTo = new File(outputPath);
             FileUtils.copyFile(inputFile, copyTo);
