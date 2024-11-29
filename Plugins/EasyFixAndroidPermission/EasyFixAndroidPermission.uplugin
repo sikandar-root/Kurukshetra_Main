@@ -1,0 +1,42 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Easy Fix Android Permission",
+	"Description": "Easy Fix Android Permission",
+	"Category": "Gdy Development",
+	"CreatedBy": "Suraj Kumar",
+	"CreatedByURL": "https://gdydevelopment.blogspot.com",
+	"DocsURL": "https://gdydevelopment.blogspot.com/2024/09/easy-fix-android-permission.html",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/65f0c39d150f42499a9c44b2da17eae2",
+	"SupportURL": "https://gdydevelopment.blogspot.com/p/contact-form.html",
+	"EngineVersion": "5.5.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "EasyFixAndroidPermission",
+			"Type": "Runtime",
+			"LoadingPhase": "PreLoadingScreen",
+			"PlatformAllowList": [
+				"Android"
+			]
+		},
+		{
+			"Name": "EasyFixAndroidPermission",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit",
+			"PlatformAllowList": [
+				"Mac",
+				"Win64",
+				"Linux"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "AndroidPermission",
+			"Enabled": true
+		}
+	]
+}
