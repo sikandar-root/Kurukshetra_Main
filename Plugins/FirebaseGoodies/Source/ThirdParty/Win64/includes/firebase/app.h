@@ -24,7 +24,9 @@
 #endif  // FIREBASE_PLATFORM_ANDROID
 
 #include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 #if FIREBASE_PLATFORM_IOS || FIREBASE_PLATFORM_TVOS
 #ifdef __OBJC__
@@ -46,14 +48,17 @@ class FunctionRegistry;
 }  // namespace internal
 #endif  // INTERNAL_EXPERIMENTAL
 
+#ifdef INTERNAL_EXPERIMENTAL
+#if FIREBASE_PLATFORM_DESKTOP
+namespace heartbeat {
+class HeartbeatController;  // forward declaration
+}  // namespace heartbeat
+#endif  // FIREBASE_PLATFORM_DESKTOP
+#endif  // INTERNAL_EXPERIMENTAL
+
 namespace internal {
 class AppInternal;
 }  // namespace internal
-
-#if FIREBASE_PLATFORM_ANDROID && defined(__GLIBCXX__)
-#warning "Firebase support for gnustl is deprecated and will be removed in \
-    the next major release. Please use libc++ instead."
-#endif
 
 /// @brief Reports whether a Firebase module initialized successfully.
 enum InitResult {
@@ -566,6 +571,9 @@ class App {
   /// Get the App with the given name, or nullptr if none have been created.
   static App* GetInstance(const char* name);
 
+  /// Get all the apps, including the default one.
+  static std::vector<App*> GetApps();
+
 #ifndef SWIG
 // <SWIG>
 // Unity doesn't need the JNI from here, it has its method to access JNI.
@@ -693,7 +701,10 @@ class App {
   /// @param library Name of the library to register as a user of the Firebase
   /// C++ SDK.
   /// @param version Version of the library being registered.
-  static void RegisterLibrary(const char* library, const char* version);
+  /// @param platform_resource Platform specific resource. Ex. for Android, this
+  /// is JNIEnv.
+  static void RegisterLibrary(const char* library, const char* version,
+                              void* platform_resource);
 
   // Internal method to retrieve the combined string of registered libraries.
   static const char* GetUserAgent();
@@ -704,6 +715,19 @@ class App {
   // Note - when setting this, make sure to end the path with the appropriate
   // path separator!
   static void SetDefaultConfigPath(const char* path);
+#endif  // INTERNAL_EXPERIMENTAL
+
+#ifdef INTERNAL_EXPERIMENTAL
+#if FIREBASE_PLATFORM_DESKTOP
+  // These methods are only visible to SWIG and internal users of firebase::App.
+
+  /// Logs a heartbeat using the internal HeartbeatController.
+  void LogHeartbeat() const;
+
+  /// Get a pointer to the HeartbeatController associated with this app.
+  std::shared_ptr<heartbeat::HeartbeatController> GetHeartbeatController()
+      const;
+#endif  // FIREBASE_PLATFORM_DESKTOP
 #endif  // INTERNAL_EXPERIMENTAL
 
 #ifdef INTERNAL_EXPERIMENTAL
@@ -720,23 +744,24 @@ class App {
   /// @return Reference to the FIRApp object owned by this app.
   FIRApp* GetPlatformApp() const;
 #endif  // __OBJC__
-#endif  // FIREBASE_PLATFORM_ANDROID, FIREBASE_PLATFORM_IOS, FIREBASE_PLATFORM_TVOS
+#endif  // FIREBASE_PLATFORM_ANDROID, FIREBASE_PLATFORM_IOS,
+        // FIREBASE_PLATFORM_TVOS
 #endif  // INTERNAL_EXPERIMENTAL
 
  private:
   /// Construct the object.
-  App() :
+  App()
+      :
 #if FIREBASE_PLATFORM_ANDROID || defined(DOXYGEN)
-    activity_(nullptr),
+        activity_(nullptr),
 #endif
-    internal_(nullptr) {
+        internal_(nullptr) {
     Initialize();
 
 #ifdef FIREBASE_LINUX_BUILD_CONFIG_STRING
-  CheckCompilerString(FIREBASE_LINUX_BUILD_CONFIG_STRING);
+    CheckCompilerString(FIREBASE_LINUX_BUILD_CONFIG_STRING);
 #endif  // FIREBASE_LINUX_BUILD_CONFIG_STRING
   }
-
 
   /// Initialize internal implementation
   void Initialize();

@@ -56,6 +56,9 @@ public:
 	virtual void RunTransaction() override;
 
 private:
+	UObject* ValueListener = nullptr;
+	UObject* ChildListener = nullptr;
+
 	FIRDatabaseReference* DbRef;
 	FIRDatabaseQuery* DbQuery;
 

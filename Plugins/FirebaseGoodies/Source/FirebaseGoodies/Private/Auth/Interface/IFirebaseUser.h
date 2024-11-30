@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Auth/FGFirebaseUser.h"
 #include "IFirebaseUserInfo.h"

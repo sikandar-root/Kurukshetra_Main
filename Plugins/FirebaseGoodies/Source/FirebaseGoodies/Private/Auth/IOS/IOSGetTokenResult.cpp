@@ -2,7 +2,8 @@
 
 #include "IOS/Utils/FGValueVariantUtils.h"
 
-#import <FirebaseAuth/FirebaseAuth.h>
+#import <FirebaseAuthInterop/FIRAuthInterop.h>
+#import <FirebaseAuth/FirebaseAuth-Swift.h>
 
 IOSGetTokenResult::IOSGetTokenResult(FIRAuthTokenResult* TokenResult)
 {

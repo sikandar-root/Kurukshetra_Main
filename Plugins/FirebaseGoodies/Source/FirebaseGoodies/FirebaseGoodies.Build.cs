@@ -5,6 +5,7 @@ using UnrealBuildTool;
 
 #if UE_5_0_OR_LATER
 using EpicGames.Core;
+
 #else
 using Tools.DotNETCommon;
 #endif
@@ -44,10 +45,16 @@ public class FirebaseGoodies : ModuleRules
 			if (Ini.TryGetValue("/Script/FirebaseGoodies.FirebaseGoodiesSettings", "bEnableEditorSupport", out TempBool))
 				EnableEditorSupport = TempBool;
 
-			if (Target.Platform == UnrealTargetPlatform.Mac && Target.Version.MajorVersion >= 5)
-				EnableEditorSupport = false;
+			// if (Target.Platform == UnrealTargetPlatform.Mac && Target.Version.MajorVersion >= 5)
+			// 	EnableEditorSupport = false;
 
 			PublicDefinitions.Add("FG_ENABLE_EDITOR_SUPPORT=" + (EnableEditorSupport ? "1" : "0"));
+			if (EnableEditorSupport)
+			{
+				PublicDefinitions.Add("FIREBASE_PLATFORM_ANDROID=0");
+				PublicDefinitions.Add("FIREBASE_PLATFORM_IOS=0");
+				PublicDefinitions.Add("FIREBASE_PLATFORM_TVOS=0");
+			}
 		}
 
 		if (Target.Platform == UnrealTargetPlatform.Mac && EnableEditorSupport)
@@ -105,9 +112,12 @@ public class FirebaseGoodies : ModuleRules
 		PublicSystemLibraries.Add("rpcrt4.lib");
 		PublicSystemLibraries.Add("ole32.lib");
 		PublicSystemLibraries.Add("shell32.lib");
+		PublicSystemLibraries.Add("dbghelp.lib");
+		PublicSystemLibraries.Add("bcrypt.lib");
 		PublicSystemLibraries.Add("iphlpapi.lib");
 		PublicSystemLibraries.Add("psapi.lib");
 		PublicSystemLibraries.Add("userenv.lib");
+		PublicSystemLibraries.Add("icu.lib");
 	}
 
 	void HandleOsX(ReadOnlyTargetRules Target)
@@ -139,6 +149,13 @@ public class FirebaseGoodies : ModuleRules
 
 	void HandleIos(ReadOnlyTargetRules Target)
 	{
+		// Swift support
+		var SDKROOT = Utils.RunLocalProcessAndReturnStdOut("/usr/bin/xcrun", "--sdk iphoneos --show-sdk-path");
+		PublicSystemLibraryPaths.Add(SDKROOT + "/usr/lib/swift");
+		PublicSystemLibraryPaths.Add(SDKROOT + "../../../../../../Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos");
+		PublicSystemLibraryPaths.Add(SDKROOT + "../../../../../../Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/iphoneos");
+		PublicSystemLibraryPaths.Add(SDKROOT + "../../../../../../Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.5/iphoneos");
+
 		PublicFrameworks.AddRange(
 			new[]
 			{
@@ -150,38 +167,57 @@ public class FirebaseGoodies : ModuleRules
 			}
 		);
 
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseABTesting", "../ThirdParty/IOS/FirebaseABTesting.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseAnalytics", "../ThirdParty/IOS/FirebaseAnalytics.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseCore", "../ThirdParty/IOS/FirebaseCore.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseCoreDiagnostics", "../ThirdParty/IOS/FirebaseCoreDiagnostics.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseDatabase", "../ThirdParty/IOS/FirebaseDatabase.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseInstallations", "../ThirdParty/IOS/FirebaseInstallations.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseRemoteConfig", "../ThirdParty/IOS/FirebaseRemoteConfig.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("GoogleAppMeasurement", "../ThirdParty/IOS/GoogleAppMeasurement.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("GoogleAppMeasurementIdentitySupport", "../ThirdParty/IOS/GoogleAppMeasurementIdentitySupport.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("GoogleDataTransport", "../ThirdParty/IOS/GoogleDataTransport.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("GoogleUtilities", "../ThirdParty/IOS/GoogleUtilities.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("leveldb-library", "../ThirdParty/IOS/leveldb-library.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("nanopb", "../ThirdParty/IOS/nanopb.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("PromisesObjC", "../ThirdParty/IOS/PromisesObjC.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseAuth", "../ThirdParty/IOS/FirebaseAuth.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("GoogleSignIn", "../ThirdParty/IOS/GoogleSignIn.embeddedframework.zip", "GoogleSignIn.framework/Resources/GoogleSignIn.bundle"));
-        
-		PublicAdditionalFrameworks.Add(new Framework("AppAuth", "../ThirdParty/IOS/AppAuth.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("GTMAppAuth", "../ThirdParty/IOS/GTMAppAuth.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseStorage", "../ThirdParty/IOS/FirebaseStorage.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseCrashlytics", "../ThirdParty/IOS/FirebaseCrashlytics.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseMessaging", "../ThirdParty/IOS/FirebaseMessaging.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseFunctions", "../ThirdParty/IOS/FirebaseFunctions.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("GTMSessionFetcher", "../ThirdParty/IOS/GTMSessionFetcher.embeddedframework.zip"));
+		var firebaseFrameworks = new[]
+		{
+			"FBLPromises",
+			"FirebaseAnalytics",
+			"FirebaseCore",
+			"FirebaseCoreInternal",
+			"FirebaseInstallations",
+			"GoogleAppMeasurement",
+			"GoogleAppMeasurementIdentitySupport",
+			"GoogleUtilities",
+			"nanopb",
+			"FirebaseAppCheckInterop",
+			"FirebaseAuth",
+			"GTMSessionFetcher",
+			"RecaptchaInterop",
+			"FirebaseCoreExtension",
+			"FirebaseCrashlytics",
+			"FirebaseRemoteConfigInterop",
+			"FirebaseSessions",
+			"GoogleDataTransport",
+			"Promises",
+			"FirebaseDatabase",
+			"FirebaseSharedSwift",
+			"leveldb",
+			"FirebaseStorage",
+			"FirebaseFirestore",
+			"FirebaseFirestoreInternal",
+			"absl",
+			"grpc",
+			"grpcpp",
+			"openssl_grpc",
+			"FirebaseAuthInterop",
+			"FirebaseFunctions",
+			"FirebaseMessagingInterop",
+			"FirebaseMessaging",
+			"FirebaseABTesting",
+			"FirebaseRemoteConfig",
+			"FirebaseRemoteConfig",
+			"AppAuth",
+			"AppCheckCore",
+			"GTMAppAuth",
+			"GoogleSignIn",
+			"FirebaseDynamicLinks",
+		};
 
-		PublicAdditionalFrameworks.Add(new Framework("abseil", "../ThirdParty/IOS/abseil.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("BoringSSL-GRPC", "../ThirdParty/IOS/BoringSSL-GRPC.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseFirestore", "../ThirdParty/IOS/FirebaseFirestore.embeddedframework.zip"));
-		PublicAdditionalFrameworks.Add(new Framework("gRPC-C++", "../ThirdParty/IOS/gRPC-C++.embeddedframework.zip", "gRPC-C++.framework/Resources/gRPCCertificates-Cpp.bundle"));
-		PublicAdditionalFrameworks.Add(new Framework("gRPC-Core", "../ThirdParty/IOS/gRPC-Core.embeddedframework.zip"));
+		foreach (var firebaseFramework in firebaseFrameworks)
+		{
+			AddIosFramework(firebaseFramework);
+		}
 
-		PublicAdditionalFrameworks.Add(new Framework("FirebaseDynamicLinks", "../ThirdParty/IOS/FirebaseDynamicLinks.embeddedframework.zip"));
+		AddIosFramework("GTMSessionFetcher", "GTMSessionFetcher_Core_Privacy");
 
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private/IOS"));
 		PrivateIncludePaths.Add(Path.Combine(ModuleDirectory, "Private/RemoteConfig/IOS"));
@@ -207,6 +243,19 @@ public class FirebaseGoodies : ModuleRules
 		var PluginPath = Utils.MakePathRelativeTo(ModuleDirectory, Target.RelativeEnginePath);
 
 		AdditionalPropertiesForReceipt.Add("IOSPlugin", Path.Combine(PluginPath, "FirebaseGoodies_IOS_UPL.xml"));
+	}
+
+	void AddIosFramework(string name, string bundle = null)
+	{
+		var frameworkPath = $"../ThirdParty/IOS/{name}.embeddedframework.zip";
+		if (bundle == null)
+		{
+			PublicAdditionalFrameworks.Add(new Framework(name, frameworkPath));
+		}
+		else
+		{
+			PublicAdditionalFrameworks.Add(new Framework(name, frameworkPath, $"{name}.framework/Resources/{bundle}.bundle"));
+		}
 	}
 
 	void HandleAndroid(ReadOnlyTargetRules Target)

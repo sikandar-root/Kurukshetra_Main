@@ -95,19 +95,19 @@ void AnalyticsIOS::LogEventWithParameters(const FString& EventName, const TArray
 	{
 		switch (parameter->GetType())
 		{
-		case EParameterType::Integer:
+		case UFGAnalyticsParameterType::Integer:
 			{
 				NSNumber* paramValue = [NSNumber numberWithInt:parameter->GetInt()];
 				parameters[parameter->GetName().GetNSString()] = paramValue;
 				break;
 			}
-		case EParameterType::Float:
+		case UFGAnalyticsParameterType::Float:
 			{
 				NSNumber* paramValue = [NSNumber numberWithFloat:parameter->GetFloat()];
 				parameters[parameter->GetName().GetNSString()] = paramValue;
 				break;
 			}
-		case EParameterType::String:
+		case UFGAnalyticsParameterType::String:
 			{
 				parameters[parameter->GetName().GetNSString()] = parameter->GetString().GetNSString();
 				break;

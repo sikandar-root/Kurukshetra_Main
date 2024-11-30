@@ -62,6 +62,9 @@ public:
 private:
 	TSharedPtr<FJavaClassObject> DatabaseRefJObject;
 
+	UObject* ValueListener = nullptr;
+	UObject* ChildListener = nullptr;
+
 	UFGTransactionTask* TransactionTask;
 
 	FJavaClassMethod SetValueMethod;

@@ -7,7 +7,7 @@
 #include "FGAnalyticsParameter.generated.h"
 
 UENUM()
-enum class EParameterType : uint8
+enum class UFGAnalyticsParameterType : uint8
 {
 	Undefined,
 	Integer,
@@ -91,7 +91,7 @@ public:
 	* @return - parameter's type.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Analytics")
-	EParameterType GetType();
+	UFGAnalyticsParameterType GetType();
 
 private:
 	FString Name;

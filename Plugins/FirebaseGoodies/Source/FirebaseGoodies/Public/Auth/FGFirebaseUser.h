@@ -32,7 +32,7 @@ public:
 	* @return true if user signed in anonymously.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth|Firebase User")
-	bool IsAnonymous();
+	bool IsAnonymous() const;
 
 	/**
 	 * If the user's email is verified
@@ -58,22 +58,22 @@ public:
 	/**
 	* Link the user with the given 3rd party credentials.
 	*
-	* @param credentials - credentials to link with.
+	* @param Credentials - credentials to link with.
 	* @param OnSuccess - callback to be invoked upon successful linking.
 	* @param OnError - callback to be invoked when linking failed.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth|Firebase User", meta = (AutoCreateRefTerm = "OnSuccess,OnError"))
-	void LinkWithCredentials(UFGAuthCredentials* credentials, const FOnUserUpdated& OnSuccess, const FOnUserOperationError& OnError);
+	void LinkWithCredentials(UFGAuthCredentials* Credentials, const FOnUserUpdated& OnSuccess, const FOnUserOperationError& OnError);
 
 	/**
 	* Convenience function for ReauthenticateAndRetrieveData that discards the returned UFGFirebaseUser data.
 	*
-	* @param credentials - credentials to reauthenticate with.
+	* @param Credentials - credentials to reauthenticate with.
 	* @param OnSuccess - callback to be invoked upon successful reauthentication.
 	* @param OnError - callback to be invoked when reauthentication failed.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth|Firebase User", meta = (AutoCreateRefTerm = "OnSuccess,OnError"))
-	void Reauthenticate(UFGAuthCredentials* credentials, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError);
+	void Reauthenticate(UFGAuthCredentials* Credentials, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError);
 
 	/**
 	* Refresh the data for this user.
@@ -136,18 +136,20 @@ public:
 	/**
 	* Update a subset of user profile information.
 	*
+	* @param DisplayName - User display name
+	* @param AvatarUrl - URL to user avatar
 	* @param OnSuccess - callback to be invoked upon successful change.
 	* @param OnError - callback to be invoked when task failed.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth|Firebase User", meta = (AutoCreateRefTerm = "OnSuccess,OnError"))
-	void UpdateProfile(const FString& displayName, const FString& avatarUrl, const FOnUserVoidTaskCompleted& OnSuccess,
+	void UpdateProfile(const FString& DisplayName, const FString& AvatarUrl, const FOnUserVoidTaskCompleted& OnSuccess,
 	                   const FOnUserOperationError& OnError);
 
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth|Firebase User", meta = (AutoCreateRefTerm = "OnSuccess,OnError"))
 	void GetToken(bool ForceRefresh, const FOnUserStringTaskCompleted& OnSuccess, const FOnUserOperationError& OnError);
 
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth|Firebase User")
-	TArray<UFGFirebaseUserInfo*> GetProviderData();
+	TArray<UFGFirebaseUserInfo*> GetProviderData() const;
 	
 	/**
 	* Get ID token data. Works only on IOS and Android. For desktop platforms use GetToken.
@@ -165,7 +167,7 @@ public:
 	static FOnUserStringTaskCompleted OnUserStringTaskCompletedCallback;
 	static FOnGetTokenResultCompleted OnGetTokenResultCompletedCallback;
 
-	void Init(TSharedPtr<IFirebaseUser> User);
+	void Init(const TSharedPtr<IFirebaseUser>& User);
 
 private:
 	TSharedPtr<IFirebaseUser> UserImpl;

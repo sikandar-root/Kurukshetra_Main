@@ -1,5 +1,7 @@
 #pragma once
 
+#include "HAL/Platform.h"
+
 #if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
 #include <firebase/auth/user.h>
@@ -9,7 +11,7 @@
 class DesktopFirebaseUserInfo : public IFirebaseUserInfo
 {
 public:
-	DesktopFirebaseUserInfo(firebase::auth::User::UserInfoInterface* Info);
+	DesktopFirebaseUserInfo(firebase::auth::User::UserInfoInterface Info);
 	virtual ~DesktopFirebaseUserInfo() override;
 	virtual FString GetUid() override;
 	virtual FString GetProviderId() override;
@@ -20,7 +22,7 @@ public:
 	virtual bool IsUserInfoValid() override;
 
 private:
-	firebase::auth::User::UserInfoInterface* UserInfo;
+	firebase::auth::User::UserInfoInterface UserInfo;
 };
 
 #endif

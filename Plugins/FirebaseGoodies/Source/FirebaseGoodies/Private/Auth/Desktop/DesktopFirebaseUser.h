@@ -1,5 +1,6 @@
 #pragma once
 
+#include "HAL/Platform.h"
 
 #if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
@@ -9,7 +10,7 @@
 class DesktopFirebaseUser : public IFirebaseUser
 {
 public:
-	DesktopFirebaseUser(firebase::auth::User* User);
+	DesktopFirebaseUser(firebase::auth::User User);
 
 	virtual bool IsAnonymous() override;
 	virtual bool IsUserValid() override;
@@ -36,7 +37,7 @@ public:
 	virtual void GetIdToken(bool ForceRefresh, const FOnGetTokenResultCompleted& OnSuccess, const FOnUserOperationError& OnError) override;
 
 private:
-	firebase::auth::User* DesktopUser;
+	firebase::auth::User DesktopUser;
 };
 
 #endif

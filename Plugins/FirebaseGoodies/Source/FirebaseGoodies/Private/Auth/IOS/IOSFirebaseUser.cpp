@@ -4,7 +4,12 @@
 #include "IOSFirebaseUserInfo.h"
 #include "IOSGetTokenResult.h"
 
+#include "Auth/FGGetTokenResult.h"
+
 #include "Auth/IOS/IOSFirebaseAuthCredentials.h"
+
+#include "UObject/UObjectGlobals.h"
+
 class IOSFirebaseAuthCredentials;
 
 IOSFirebaseUser::IOSFirebaseUser(FIRUser* User) {
@@ -60,7 +65,7 @@ void IOSFirebaseUser::Delete(const FOnUserVoidTaskCompleted& OnSuccess, const FO
     [NativeUser deleteWithCompletion:^(NSError* _Nullable error) {
       if (error != nil) {
           FString errorString = FString(error.localizedDescription);
-          AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+          AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
           return;
       }
 
@@ -74,7 +79,7 @@ void IOSFirebaseUser::LinkWithCredentials(UFGAuthCredentials* Credentials, const
                         completion:^(FIRAuthDataResult* _Nullable result, NSError* _Nullable error) {
                           if (error != nil) {
                               FString errorString = FString(error.localizedDescription);
-                              AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+                              AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
                               return;
                           }
 
@@ -94,11 +99,11 @@ void IOSFirebaseUser::Reauthenticate(UFGAuthCredentials* Credentials, const FOnU
                                   completion:^(FIRAuthDataResult* _Nullable result, NSError* _Nullable error) {
                                     if (error != nil) {
                                         FString errorString = FString(error.localizedDescription);
-                                        AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+                                        AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
                                         return;
                                     }
 
-                                    AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
+                                    AsyncTask(ENamedThreads::GameThread, [this]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
                                   }];
 }
 
@@ -106,11 +111,11 @@ void IOSFirebaseUser::Reload(const FOnUserVoidTaskCompleted& OnSuccess, const FO
     [NativeUser reloadWithCompletion:^(NSError* _Nullable error) {
       if (error != nil) {
           FString errorString = FString(error.localizedDescription);
-          AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+          AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
           return;
       }
 
-      AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
+      AsyncTask(ENamedThreads::GameThread, [this]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
     }];
 }
 
@@ -118,11 +123,11 @@ void IOSFirebaseUser::SendEmailVerification(const FOnUserVoidTaskCompleted& OnSu
     [NativeUser sendEmailVerificationWithCompletion:^(NSError* _Nullable error) {
       if (error != nil) {
           FString errorString = FString(error.localizedDescription);
-          AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+          AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
           return;
       }
 
-      AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
+      AsyncTask(ENamedThreads::GameThread, [this]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
     }];
 }
 
@@ -130,7 +135,8 @@ void IOSFirebaseUser::UnlinkProvider(const FString& Provider, const FOnUserUpdat
     [NativeUser unlinkFromProvider:Provider.GetNSString()
                         completion:^(FIRUser* _Nullable result, NSError* _Nullable error) {
                           if (error != nil) {
-                              AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), FString(error.localizedDescription)); });
+                              FString errorString = FString(error.localizedDescription);
+                              AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
                               return;
                           }
 
@@ -150,11 +156,11 @@ void IOSFirebaseUser::UpdateEmail(const FString& Email, const FOnUserVoidTaskCom
                  completion:^(NSError* _Nullable error) {
                    if (error != nil) {
                        FString errorString = FString(error.localizedDescription);
-                       AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+                       AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
                        return;
                    }
 
-                   AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
+                   AsyncTask(ENamedThreads::GameThread, [this]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
                  }];
 }
 
@@ -163,11 +169,11 @@ void IOSFirebaseUser::UpdatePassword(const FString& Password, const FOnUserVoidT
                     completion:^(NSError* _Nullable error) {
                       if (error != nil) {
                           FString errorString = FString(error.localizedDescription);
-                          AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+                          AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
                           return;
                       }
 
-                      AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
+                      AsyncTask(ENamedThreads::GameThread, [this]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
                     }];
 }
 
@@ -177,11 +183,11 @@ void IOSFirebaseUser::UpdatePhoneNumber(UFGAuthCredentials* Credentials, const F
                                  completion:^(NSError* _Nullable error) {
                                    if (error != nil) {
                                        FString errorString = FString(error.localizedDescription);
-                                       AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+                                       AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
                                        return;
                                    }
 
-                                   AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
+                                   AsyncTask(ENamedThreads::GameThread, [this]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
                                  }];
 }
 
@@ -192,11 +198,11 @@ void IOSFirebaseUser::UpdateProfile(const FString& DisplayName, const FString& A
     [request commitChangesWithCompletion:^(NSError* _Nullable error) {
       if (error != nil) {
           FString errorString = FString(error.localizedDescription);
-          AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+          AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
           return;
       }
 
-      AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
+      AsyncTask(ENamedThreads::GameThread, [this]() { UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(GetUid()); });
     }];
 }
 
@@ -205,12 +211,12 @@ void IOSFirebaseUser::GetToken(bool ForceRefresh, const FOnUserStringTaskComplet
                               completion:^(NSString* token, NSError* error) {
                                 if (error != nil) {
                                     FString errorString = FString(error.localizedDescription);
-                                    AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
+                                    AsyncTask(ENamedThreads::GameThread, [this, errorString]() { UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString); });
                                     return;
                                 }
 
                                 FString TokenString = FString(token);
-                                AsyncTask(ENamedThreads::GameThread, [=]() { UFGFirebaseUser::OnUserStringTaskCompletedCallback.ExecuteIfBound(GetUid(), TokenString); });
+                                AsyncTask(ENamedThreads::GameThread, [this, TokenString]() { UFGFirebaseUser::OnUserStringTaskCompletedCallback.ExecuteIfBound(GetUid(), TokenString); });
                               }];
 }
 
@@ -231,7 +237,7 @@ void IOSFirebaseUser::GetIdToken(bool ForceRefresh, const FOnGetTokenResultCompl
 	[NativeUser getIDTokenResultForcingRefresh:ForceRefresh completion:^(FIRAuthTokenResult* tokenResult, NSError* error) {
 		if (error != nil) {
 			FString errorString = FString(error.localizedDescription);
-			AsyncTask(ENamedThreads::GameThread, [=]() {
+			AsyncTask(ENamedThreads::GameThread, [this, errorString]() {
 				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(GetUid(), errorString);
 			});
 			return;

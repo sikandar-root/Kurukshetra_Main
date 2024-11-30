@@ -10,7 +10,7 @@
 #endif
 
 #if PLATFORM_IOS
-#import <FirebaseStorage/FirebaseStorage.h>
+#import <FirebaseStorage/FirebaseStorage-Swift.h>
 #endif
 
 UFGStorageMetadataValues::~UFGStorageMetadataValues()

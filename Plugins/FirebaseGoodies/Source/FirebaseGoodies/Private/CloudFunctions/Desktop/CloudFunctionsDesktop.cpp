@@ -1,8 +1,9 @@
 ﻿// Copyright (c) 2023 Nineva Studios
 
+#include "CloudFunctionsDesktop.h"
+
 #if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
-#include "CloudFunctionsDesktop.h"
 #include "CloudFunctions/FGCloudFunctions.h"
 
 #include "Async/Async.h"

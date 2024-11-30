@@ -1,5 +1,6 @@
 #include "IOSFirebaseUserInfo.h"
-#import <FirebaseAuth/FirebaseAuth.h>
+#import <FirebaseAuthInterop/FIRAuthInterop.h>
+#import <FirebaseAuth/FirebaseAuth-Swift.h>
 
 #include <objc/objc.h>
 

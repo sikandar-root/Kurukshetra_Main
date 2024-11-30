@@ -575,7 +575,7 @@ UFGListenerRegistration* UFGQuery::AddSnapshotListener(const FFirestoreQuerySnap
 		{
 			[error retain];
 		}
-		AsyncTask(ENamedThreads::GameThread, [=]() {
+		AsyncTask(ENamedThreads::GameThread, [this, error, snapshot]() {
 			if (error == nil) {
 				UFGQuerySnapshot* Snapshot = NewObject<UFGQuerySnapshot>();
 				Snapshot->Init(snapshot);

@@ -1,5 +1,5 @@
-#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 #include "DesktopFirebaseAuthCredentials.h"
+#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
 DesktopFirebaseAuthCredentials::~DesktopFirebaseAuthCredentials()
 {
@@ -20,8 +20,18 @@ DesktopFirebaseAuthCredentials::DesktopFirebaseAuthCredentials(firebase::auth::C
 	DesktopCredential = Credential;
 }
 
+DesktopFirebaseAuthCredentials::DesktopFirebaseAuthCredentials(firebase::auth::PhoneAuthCredential Credential)
+{
+	PhoneCredential = Credential;
+}
+
 firebase::auth::Credential DesktopFirebaseAuthCredentials::GetDesktopCredential() const
 {
 	return DesktopCredential;
+}
+
+firebase::auth::PhoneAuthCredential DesktopFirebaseAuthCredentials::GetPhoneCredential() const
+{
+	return PhoneCredential;
 }
 #endif

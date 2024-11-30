@@ -1,7 +1,8 @@
 #pragma once
 #include "Auth/Interface/IFirebaseUserInfo.h"
 
-#import <FirebaseAuth/FirebaseAuth.h>
+#import <FirebaseAuthInterop/FIRAuthInterop.h>
+#import <FirebaseAuth/FirebaseAuth-Swift.h>
 #include <objc/objc.h>
 
 @class FIRUserInfo;

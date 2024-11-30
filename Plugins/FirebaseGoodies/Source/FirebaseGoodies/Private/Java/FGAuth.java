@@ -6,9 +6,17 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
+
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseException;
+import com.google.firebase.auth.ActionCodeSettings;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -65,6 +73,11 @@ public class FGAuth {
 
 	public static native void OnUserTokenResultCompleted(String uid, GetTokenResult result);
 
+
+	public static native void OnSendSignInLinkToEmailSuccess();
+
+	public static native void OnSendSignInLinkToEmailError(String error);
+
 	public static void initListeners() {
 		FirebaseAuth.getInstance().addIdTokenListener(new FirebaseAuth.IdTokenListener() {
 			@Override
@@ -100,7 +113,7 @@ public class FGAuth {
 	}
 
 	public static void fetchSignInMethods(String email) {
-		FirebaseAuth.getInstance().fetchSignInMethodsForEmail (email.trim()).addOnCompleteListener(new OnCompleteListener<SignInMethodQueryResult>() {
+		FirebaseAuth.getInstance().fetchSignInMethodsForEmail(email.trim()).addOnCompleteListener(new OnCompleteListener<SignInMethodQueryResult>() {
 			@Override
 			public void onComplete(Task<SignInMethodQueryResult> task) {
 				if (task.isSuccessful()) {
@@ -410,15 +423,66 @@ public class FGAuth {
 		};
 	}
 
-	public static void signInWithGoogle(Activity context, String clientId) {
-		startAuthActivity(context, clientId, FGAuthIntermediateActivity.SIGN_IN_GOOGLE);
+	public static final int SIGN_IN_GOOGLE = 1;
+
+	public static void signInWithGoogle(Activity activity, String clientId) {
+		GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+				.requestIdToken(clientId)
+				.requestEmail()
+				.build();
+
+		GoogleSignInClient mGoogleSignInClient = GoogleSignIn.getClient(activity, gso);
+		Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+		activity.startActivityForResult(signInIntent, SIGN_IN_GOOGLE);
 	}
 
-	private static void startAuthActivity(Activity activity, String clientId, int actionType) {
-		Intent intent = new Intent(activity, FGAuthIntermediateActivity.class);
-		intent.putExtra(FGAuthIntermediateActivity.EXTRA_FIREBASE_CLIENT_ID, clientId);
-		intent.putExtra(FGAuthIntermediateActivity.EXTRA_ACTION_REQUIRED, actionType);
+	public static void processSignInWithGoogleResult(int requestCode, int resultCode, Intent intent) {
+		if (requestCode == SIGN_IN_GOOGLE) {
+			Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(intent);
+			try {
+				GoogleSignInAccount account = task.getResult(ApiException.class);
+				if (account != null) {
+					OnGoogleSignInSuccess(GoogleAuthProvider.getCredential(account.getIdToken(), null));
+				} else {
+					OnAuthError("GoogleSignInAccount is not valid for credentials creation.");
+				}
+			} catch (ApiException e) {
+				OnAuthError("Google sign in error: " + e.getStatusCode() + " - " + e.getMessage());
+			}
+		}
+	}
 
-		activity.startActivity(intent);
+	public static void sendSignInLinkToEmail(String email,
+											 String url, String iOSBundleId, String dynamicLinkDomain,
+											 String androidPackageName, boolean installIfNotAvailable, String minimumVersion,
+											 boolean handleCodeInApp) {
+		
+		if (url == null || url.isEmpty()) {
+	        OnSendSignInLinkToEmailError("URL must not be empty");	
+            return;
+		}
+
+		ActionCodeSettings.Builder settingsBuilder = ActionCodeSettings.newBuilder().setUrl(url);
+		if (iOSBundleId != null && !iOSBundleId.isEmpty()) {
+			settingsBuilder.setIOSBundleId(iOSBundleId);
+		}
+		if (dynamicLinkDomain != null && !dynamicLinkDomain.isEmpty()) {
+			settingsBuilder.setDynamicLinkDomain(dynamicLinkDomain);
+		}
+		if (androidPackageName != null && !androidPackageName.isEmpty()) {
+			settingsBuilder.setAndroidPackageName(androidPackageName, installIfNotAvailable, minimumVersion);
+		}
+		settingsBuilder.setHandleCodeInApp(handleCodeInApp);
+		FirebaseAuth.getInstance().sendSignInLinkToEmail(email, settingsBuilder.build())
+				.addOnCompleteListener(new OnCompleteListener<Void>() {
+					@Override
+					public void onComplete(@NonNull Task<Void> task) {
+						if (task.isSuccessful()) {
+							OnSendSignInLinkToEmailSuccess();
+						} else {
+							OnSendSignInLinkToEmailError(task.getException().toString());
+						}
+					}
+				});
 	}
 }

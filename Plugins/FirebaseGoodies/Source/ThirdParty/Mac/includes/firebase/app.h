@@ -24,7 +24,9 @@
 #endif  // FIREBASE_PLATFORM_ANDROID
 
 #include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 #if FIREBASE_PLATFORM_IOS || FIREBASE_PLATFORM_TVOS
 #ifdef __OBJC__
@@ -44,6 +46,14 @@ void CheckCompilerString(const char* input);
 namespace internal {
 class FunctionRegistry;
 }  // namespace internal
+#endif  // INTERNAL_EXPERIMENTAL
+
+#ifdef INTERNAL_EXPERIMENTAL
+#if FIREBASE_PLATFORM_DESKTOP
+namespace heartbeat {
+class HeartbeatController;  // forward declaration
+}  // namespace heartbeat
+#endif  // FIREBASE_PLATFORM_DESKTOP
 #endif  // INTERNAL_EXPERIMENTAL
 
 namespace internal {
@@ -561,6 +571,9 @@ class App {
   /// Get the App with the given name, or nullptr if none have been created.
   static App* GetInstance(const char* name);
 
+  /// Get all the apps, including the default one.
+  static std::vector<App*> GetApps();
+
 #ifndef SWIG
 // <SWIG>
 // Unity doesn't need the JNI from here, it has its method to access JNI.
@@ -688,7 +701,10 @@ class App {
   /// @param library Name of the library to register as a user of the Firebase
   /// C++ SDK.
   /// @param version Version of the library being registered.
-  static void RegisterLibrary(const char* library, const char* version);
+  /// @param platform_resource Platform specific resource. Ex. for Android, this
+  /// is JNIEnv.
+  static void RegisterLibrary(const char* library, const char* version,
+                              void* platform_resource);
 
   // Internal method to retrieve the combined string of registered libraries.
   static const char* GetUserAgent();
@@ -699,6 +715,19 @@ class App {
   // Note - when setting this, make sure to end the path with the appropriate
   // path separator!
   static void SetDefaultConfigPath(const char* path);
+#endif  // INTERNAL_EXPERIMENTAL
+
+#ifdef INTERNAL_EXPERIMENTAL
+#if FIREBASE_PLATFORM_DESKTOP
+  // These methods are only visible to SWIG and internal users of firebase::App.
+
+  /// Logs a heartbeat using the internal HeartbeatController.
+  void LogHeartbeat() const;
+
+  /// Get a pointer to the HeartbeatController associated with this app.
+  std::shared_ptr<heartbeat::HeartbeatController> GetHeartbeatController()
+      const;
+#endif  // FIREBASE_PLATFORM_DESKTOP
 #endif  // INTERNAL_EXPERIMENTAL
 
 #ifdef INTERNAL_EXPERIMENTAL

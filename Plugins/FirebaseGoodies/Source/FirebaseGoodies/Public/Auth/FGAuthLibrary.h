@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "ActionCodeSettings.h"
 #include "FGAuthCredentials.h"
 #include "FGFirebaseUser.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
@@ -11,9 +12,13 @@ class IFirebaseAuthLibrary;
 #include "FGAuthLibrary.generated.h"
 
 DECLARE_DYNAMIC_DELEGATE(FAuthVoidDelegate);
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FAuthUserDelegate, UFGFirebaseUser*, result);
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FAuthStringDelegate, FString, string);
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FSignInMethodsFetchedDelegate, const TArray<FString>&, methods);
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FAuthCredentialsDelegate, UFGAuthCredentials*, result);
 
 UCLASS()
@@ -222,7 +227,7 @@ public:
 	* @param Number - phone number to be verified.
 	* @param TimeoutMillis - operation timeout, in milliseconds.
 	* @param OnSuccess - callback to be invoked with the UFGAuthCredentials object.
-	* @param OnError - callback to be invoked when an error ocurred.
+	* @param OnError - callback to be invoked when an error occured.
 	* @param OnTimeout - callback to be invoked upon operation timeout.
 	* @param OnSmsSent - callback to be invoked with VerificationId, required for creating Phone Credentials along with verification code.
 	*/
@@ -236,10 +241,21 @@ public:
 	* invoked with the UFGAuthCredentials object that can be used in further user-related operations.
 	*
 	* @param OnSuccess - callback to be invoked with the UFGAuthCredentials object.
-	* @param OnError - callback to be invoked when an error ocurred.
+	* @param OnError - callback to be invoked when an error occured.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth", meta = (AutoCreateRefTerm = "OnSuccess,OnError"))
 	static void PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSuccess, const FAuthStringDelegate& OnError);
+
+	/**
+	* Sends an email to the specified email which will contain a link to be used to sign in the user.
+	* 
+	* @param Email - Email address to send email to
+	* @param Settings - The settings
+	* @param OnSuccess - callback to be invoked on success.
+	* @param OnError - callback to be invoked when an error occurred.
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth", meta = (AutoCreateRefTerm = "OnSuccess,OnError"))
+	static void SendSignInLinkToEmail(const FString& Email, FActionCodeSettings Settings, const FAuthVoidDelegate& OnSuccess, const FAuthStringDelegate& OnError);
 
 	static FAuthVoidDelegate IdTokenChangedCallback;
 	static FAuthVoidDelegate AuthStateChangedCallback;
@@ -257,6 +273,8 @@ public:
 	static FAuthCredentialsDelegate GetGameCenterCredentialsSuccessDelegate;
 	static FAuthStringDelegate GetGameCenterCredentialsErrorDelegate;
 
+	static FAuthVoidDelegate SendSignInLinkSuccessCallback;
+	static FAuthStringDelegate SendSignInLinkErrorCallback;
 private:
 	static TSharedPtr<IFirebaseAuthLibrary> AuthLibraryImpl;
 };

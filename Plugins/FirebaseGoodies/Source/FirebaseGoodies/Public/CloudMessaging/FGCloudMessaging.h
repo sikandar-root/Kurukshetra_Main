@@ -10,9 +10,13 @@ class UFGRemoteMessageBuilder;
 class UFGRemoteMessage;
 
 DECLARE_DYNAMIC_DELEGATE(FCloudMessagingVoidDelegate);
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FCloudMessagingStringDelegate, FString, String);
+
 DECLARE_DYNAMIC_DELEGATE_OneParam(FCloudMessagingMessageDelegate, UFGRemoteMessage*, Message);
+
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FCloudMessagingTwoStringDelegate, FString, FirstString, FString, SecondString);
+
 DECLARE_DYNAMIC_DELEGATE_TwoParams(FCloudMessagingRemoteNotificationDelegate, FString, Payload, int, State);
 
 /**
@@ -22,9 +26,15 @@ UCLASS()
 class FIREBASEGOODIES_API UFGCloudMessaging : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
-	
+
 public:
-	
+	/**
+	 * Notification payload JSON - ONLY if app was open via notification ans was NOT running
+	 *
+	*/
+	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
+	static FString GetLaunchNotificationPayloadJson();
+
 	/**
 	 * Get token and instance ID for this application instance.
 	 *
@@ -33,8 +43,8 @@ public:
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void GetInstanceIdData(const FCloudMessagingTwoStringDelegate& OnSuccess,
-								  const FCloudMessagingStringDelegate& OnError);
-	
+	                              const FCloudMessagingStringDelegate& OnError);
+
 	/**
 	 * Delete the Instance ID and the data associated with it.
 	 * This stops the periodic sending of data to the Firebase backend started when the Instance ID was generated,
@@ -43,13 +53,13 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void DeleteInstanceId();
-	
+
 	/**
 	 * Determines whether FCM auto-initialization is enabled or disabled.
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static bool IsAutoInitEnabled();
-	
+
 	/**
 	 * Enables or disables auto-initialization of Firebase Cloud Messaging.
 	 *
@@ -60,7 +70,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void SetAutoInitEnabled(bool Enabled);
-	
+
 	/**
 	 * Subscribes to topic in the background.
 	 * The subscribe operation is persisted and will be retried until successful.
@@ -74,9 +84,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void SubscribeToTopic(const FString& Topic,
-								 const FCloudMessagingVoidDelegate& OnSuccess,
-								 const FCloudMessagingStringDelegate& OnError);
-	
+	                             const FCloudMessagingVoidDelegate& OnSuccess,
+	                             const FCloudMessagingStringDelegate& OnError);
+
 	/**
 	 * Unsubscribes from topic in the background.
 	 * The unsubscribe operation is persisted and will be retried until successful.
@@ -90,17 +100,19 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void UnSubscribeFromTopic(const FString& Topic,
-									 const FCloudMessagingVoidDelegate& OnSuccess,
-									 const FCloudMessagingStringDelegate& OnError);
-	
+	                                 const FCloudMessagingVoidDelegate& OnSuccess,
+	                                 const FCloudMessagingStringDelegate& OnError);
+
 	/**
 	 * Bind a custom event to be invoked every time the app receives a Remote Message.
 	 * Is used mostly for Android, as the downstream messages on iOS are handled by the BindEventToOnRemoteNotificationReceived.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void BindEventToOnMessageReceived(const FCloudMessagingMessageDelegate& EventDelegate)
-	{ OnMessageReceivedCallback = EventDelegate; }
-	
+	{
+		OnMessageReceivedCallback = EventDelegate;
+	}
+
 	/**
 	 * Bind a custom event to be invoked every time Remote Messages are deleted. (Android only)
 	 *
@@ -112,29 +124,37 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void BindEventToOnMessagesDeleted(const FCloudMessagingVoidDelegate& EventDelegate)
-	{ OnMessagesDeletedCallback = EventDelegate; }
-	
+	{
+		OnMessagesDeletedCallback = EventDelegate;
+	}
+
 	/**
 	 * Bind a custom event to be invoked every time upstream Remote Message is sent. (Android only)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void BindEventToOnMessageSent(const FCloudMessagingStringDelegate& EventDelegate)
-	{ OnMessageSentCallback = EventDelegate; }
-	
+	{
+		OnMessageSentCallback = EventDelegate;
+	}
+
 	/**
 	 * Bind a custom event to be invoked every time upstream Remote Message is not sent. (Android only)
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void BindEventToOnMessageSendError(const FCloudMessagingTwoStringDelegate& EventDelegate)
-	{ OnMessageSendErrorCallback = EventDelegate; }
-	
+	{
+		OnMessageSendErrorCallback = EventDelegate;
+	}
+
 	/**
 	 * Bind a custom event to be invoked every time a new token is generated.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void BindEventToOnNewToken(const FCloudMessagingStringDelegate& EventDelegate)
-	{ OnNewTokenCallback = EventDelegate; }
-	
+	{
+		OnNewTokenCallback = EventDelegate;
+	}
+
 	/**
 	 * Bind a custom event to be invoked every time a Remote Notification is received by iOS.
 	 * It is presented as a JSON-serialized data in the similar format:
@@ -157,22 +177,23 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Cloud messaging")
 	static void BindEventToOnRemoteNotificationReceived(const FCloudMessagingRemoteNotificationDelegate& EventDelegate)
-	{ OnRemoteNotificationReceivedCallback = EventDelegate; }
-	
+	{
+		OnRemoteNotificationReceivedCallback = EventDelegate;
+	}
+
 	static FCloudMessagingTwoStringDelegate OnInstanceIdDataReceivedCallback;
 	static FCloudMessagingStringDelegate OnInstanceIdDataReceiveErrorCallback;
-	
+
 	static FCloudMessagingVoidDelegate OnTopicOperationSuccessCallback;
 	static FCloudMessagingStringDelegate OnTopicOperationErrorCallback;
-	
+
 	static FCloudMessagingMessageDelegate OnMessageReceivedCallback;
 	static FCloudMessagingVoidDelegate OnMessagesDeletedCallback;
 	static FCloudMessagingStringDelegate OnMessageSentCallback;
 	static FCloudMessagingTwoStringDelegate OnMessageSendErrorCallback;
 	static FCloudMessagingStringDelegate OnNewTokenCallback;
-	
+
 	static FCloudMessagingRemoteNotificationDelegate OnRemoteNotificationReceivedCallback;
-	
+
 	static const ANSICHAR* FGCloudMessagingClassName;
 };
-

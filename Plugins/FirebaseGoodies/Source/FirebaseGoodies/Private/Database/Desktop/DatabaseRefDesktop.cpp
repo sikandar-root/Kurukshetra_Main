@@ -1,8 +1,9 @@
 // Copyright (c) 2022 Nineva Studios
 
+#include "DatabaseRefDesktop.h"
+
 #if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
-#include "DatabaseRefDesktop.h"
 #include "DataSnapshotDesktop.h"
 #include "MutableDataDesktop.h"
 #include "DatabaseChildListener.h"
@@ -192,6 +193,8 @@ void DatabaseRefDesktop::AddValueListener(const FOnDataChangedDelegate& OnDataCh
 	Listener->OnValueChangedDelegate = OnDataChanged;
 	Listener->OnCancelledDelegate = OnCancelled;
 
+	// TODO RemoveValueListener here?
+	
 	ValueListener = Listener;
 
 	firebase::database::DatabaseReference::Query& query = Query.is_valid() ? Query : DbRef;
@@ -212,6 +215,8 @@ void DatabaseRefDesktop::AddChildListener(const FOnChildEventDelegate& OnChildEv
 	DatabaseChildListener* Listener = new DatabaseChildListener();
 	Listener->OnChildEventCallback = OnChildEvent;
 	Listener->OnCancelledCallback = OnCancelled;
+	
+	// TODO RemoveChildListener here?
 
 	ChildListener = Listener;
 

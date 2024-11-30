@@ -16,6 +16,9 @@ class UFGDatabaseRefCallback : public UObject
 public:
 	UFGDatabaseRefCallback();
 
+	UPROPERTY()
+	bool AutoRemoveAfterExecution = false;
+
 	void BindDataChangedDelegate(const FOnDataChangedDelegate& OnDataChanged);
 	void BindCancelDelegate(const FOnCancelledDelegate& OnCancelled);
 	void BindOnChildEventDelegate(const FOnChildEventDelegate& OnChildEvent);

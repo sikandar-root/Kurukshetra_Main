@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google
+ * Copyright 2018 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +93,19 @@ class ListenerRegistration {
    * initial call, subsequent calls have no effect.
    */
   virtual void Remove();
+
+  /**
+   * @brief Returns true if this `ListenerRegistration` is valid, false if it is
+   * not valid. An invalid `ListenerRegistration` could be the result of:
+   *   - Creating a `ListenerRegistration` using the default constructor.
+   *   - Moving from the `ListenerRegistration`.
+   *   - Deleting your Firestore instance, which will invalidate all the
+   *     `ListenerRegistration` instances associated with it.
+   *
+   * @return true if this `ListenerRegistration` is valid, false if this
+   * `ListenerRegistration` is invalid.
+   */
+  bool is_valid() const { return internal_ != nullptr; }
 
  private:
   friend class DocumentReferenceInternal;

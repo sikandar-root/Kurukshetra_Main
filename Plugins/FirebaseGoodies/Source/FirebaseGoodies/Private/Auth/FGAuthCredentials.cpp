@@ -22,7 +22,7 @@ FString UFGAuthCredentials::GetProvider() const
 
 bool UFGAuthCredentials::AreValid() const
 {
-	const bool bAreCredentialsValid = CredentialsImpl->AreValid();
+	const bool bAreCredentialsValid = CredentialsImpl && CredentialsImpl->AreValid();
 
 	if (!bAreCredentialsValid)
 	{
@@ -31,7 +31,7 @@ bool UFGAuthCredentials::AreValid() const
 	return bAreCredentialsValid;
 }
 
-void UFGAuthCredentials::Init(TSharedPtr<IFirebaseAuthCredentials> Credentials)
+void UFGAuthCredentials::Init(const TSharedPtr<IFirebaseAuthCredentials>& Credentials)
 {
 	CredentialsImpl = Credentials;
 }

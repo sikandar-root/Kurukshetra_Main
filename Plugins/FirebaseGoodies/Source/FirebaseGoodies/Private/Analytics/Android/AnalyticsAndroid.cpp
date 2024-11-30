@@ -110,19 +110,19 @@ void AnalyticsAndroid::LogEventWithParameters(const FString& EventName,
 	{
 		switch (parameter->GetType())
 		{
-		case EParameterType::Integer:
+		case UFGAnalyticsParameterType::Integer:
 			{
 				env->CallVoidMethod(bundle, putLongMethod,
 					*FJavaClassObject::GetJString(parameter->GetName()), parameter->GetInt());
 				break;
 			}
-		case EParameterType::Float:
+		case UFGAnalyticsParameterType::Float:
 			{
 				env->CallVoidMethod(bundle, putDoubleMethod,
 					*FJavaClassObject::GetJString(parameter->GetName()), parameter->GetFloat());
 				break;
 			}
-		case EParameterType::String:
+		case UFGAnalyticsParameterType::String:
 			{
 				env->CallVoidMethod(bundle, putStringMethod,
 					*FJavaClassObject::GetJString(parameter->GetName()),

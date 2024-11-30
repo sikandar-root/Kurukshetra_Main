@@ -5,7 +5,7 @@
 #include "Async/Async.h"
 
 #import <Foundation/Foundation.h>
-#import <FirebaseFunctions/FirebaseFunctions.h>
+#import <FirebaseFunctions/FirebaseFunctions-Swift.h>
 
 #include "CloudFunctions/FGCloudFunctions.h"
 
@@ -70,20 +70,8 @@ namespace CloudFunctionsErrorUtils
 
 	FString HandleError(NSError* error)
 	{
-		NSString* message;
-		if (error.domain == FIRFunctionsErrorDomain)
-		{
-			NSString* codeString = FunctionErrorCodeToString((FIRFunctionsErrorCode)error.code);
-			message = [NSString stringWithFormat:@"%@: %@", codeString, error.localizedDescription];
-		}
-		else
-		{
-			message = error.localizedDescription;
-		}
-
-		FString ErrorMessage = FString(message);
+		FString ErrorMessage = FString(error.localizedDescription);
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Cloud Function Error: %s"), *ErrorMessage);
 		return ErrorMessage;
-
 	}
 }

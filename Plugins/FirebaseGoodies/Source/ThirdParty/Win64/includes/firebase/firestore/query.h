@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google
+ * Copyright 2018 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,11 @@ class Future;
 
 namespace firestore {
 
+class AggregateQuery;
 class DocumentSnapshot;
 template <typename T>
 class EventListener;
+class Filter;
 class FieldPath;
 class FieldValue;
 class ListenerRegistration;
@@ -82,8 +84,7 @@ class Query {
   /**
    * @brief Copy constructor.
    *
-   * `Query` is immutable and can be efficiently copied (no deep copy is
-   * performed).
+   * `Query` is immutable and can be efficiently copied.
    *
    * @param[in] other `Query` to copy from.
    */
@@ -104,8 +105,7 @@ class Query {
   /**
    * @brief Copy assignment operator.
    *
-   * `Query` is immutable and can be efficiently copied (no deep copy is
-   * performed).
+   * `Query` is immutable and can be efficiently copied.
    *
    * @param[in] other `Query` to copy from.
    *
@@ -142,6 +142,31 @@ class Query {
    * @return Firebase Firestore instance that this Query refers to.
    */
   virtual Firestore* firestore();
+
+  /**
+   * @brief Returns a query that counts the documents in the result set of this
+   * query.
+   *
+   * The returned query, when executed, counts the documents in the result set
+   * of this query without actually downloading the documents.
+   *
+   * Using the returned query to count the documents is efficient because only
+   * the final count, not the documents' data, is downloaded. The returned query
+   * can count the documents in cases where the result set is prohibitively
+   * large to download entirely (thousands of documents).
+   *
+   * @return An aggregate query that counts the documents in the result set of
+   * this query.
+   */
+  virtual AggregateQuery Count() const;
+
+  /**
+   * @brief Creates and returns a new Query with the additional filter.
+   *
+   * @param filter The new filter to apply to the existing query.
+   * @return The created Query.
+   */
+  virtual Query Where(const Filter& filter) const;
 
   /**
    * @brief Creates and returns a new Query with the additional filter that
@@ -377,7 +402,7 @@ class Query {
    * A Query can have only one `WhereIn()` filter and it cannot be
    * combined with `WhereArrayContainsAny()`.
    *
-   * @param[in] field The name of the field containing an array to search.
+   * @param[in] field The name of the field to compare.
    * @param[in] values The list that contains the values to match.
    *
    * @return The created Query.
@@ -393,7 +418,7 @@ class Query {
    * A Query can have only one `WhereIn()` filter and it cannot be
    * combined with `WhereArrayContainsAny()`.
    *
-   * @param[in] field The path of the field containing an array to search.
+   * @param[in] field The path of the field to compare.
    * @param[in] values The list that contains the values to match.
    *
    * @return The created Query.
@@ -415,7 +440,7 @@ class Query {
    * combined with `WhereArrayContains()`, `WhereArrayContainsAny()`,
    * `WhereIn()`, or `WhereNotEqualTo()`.
    *
-   * @param[in] field The name of the field containing an array to search.
+   * @param[in] field The name of the field to compare.
    * @param[in] values The list that contains the values to match.
    *
    * @return The created Query.
@@ -437,7 +462,7 @@ class Query {
    * combined with `WhereArrayContains()`, `WhereArrayContainsAny()`,
    * `WhereIn()`, or `WhereNotEqualTo()`.
    *
-   * @param[in] field The path of the field containing an array to search.
+   * @param[in] field The path of the field to compare.
    * @param[in] values The list that contains the values to match.
    *
    * @return The created Query.
@@ -637,8 +662,23 @@ class Query {
       std::function<void(const QuerySnapshot&, Error, const std::string&)>
           callback);
 
+  /**
+   * @brief Returns true if this `Query` is valid, false if it is not valid. An
+   * invalid `Query` could be the result of:
+   *   - Creating a `Query` using the default constructor.
+   *   - Moving from the `Query`.
+   *   - Deleting your Firestore instance, which will invalidate all the `Query`
+   *     instances associated with it.
+   *
+   * @return true if this `Query` is valid, false if this `Query` is invalid.
+   */
+  bool is_valid() const { return internal_ != nullptr; }
+
  private:
+  size_t Hash() const;
+
   friend bool operator==(const Query& lhs, const Query& rhs);
+  friend size_t QueryHash(const Query& query);
 
   friend class FirestoreInternal;
   friend class QueryInternal;

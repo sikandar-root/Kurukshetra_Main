@@ -156,6 +156,16 @@ void AuthLibraryAndroid::PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSu
 	                                        FJavaWrapper::GameActivityThis, *FJavaClassObject::GetJString(Settings->AndroidOauthClientID));
 }
 
+void AuthLibraryAndroid::SendSignInLinkToEmail(const FString& Email, FActionCodeSettings Settings, const FAuthVoidDelegate& OnSuccess, const FAuthStringDelegate& OnError)
+{
+	FGMethodCallUtils::CallStaticVoidMethod(FGAuthClassName, "sendSignInLinkToEmail", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Z)V",
+	                                        *FJavaClassObject::GetJString(Email),
+	                                        *FJavaClassObject::GetJString(Settings.Url), *FJavaClassObject::GetJString(Settings.IosBundle), *FJavaClassObject::GetJString(Settings.DynamicLinkDomain),
+	                                        *FJavaClassObject::GetJString(Settings.AndroidPackageName), Settings.bInstallIfNotAvailable, *FJavaClassObject::GetJString(Settings.MinimumAppVersion),
+	                                        Settings.bCanHandleCodeInApp
+	);
+}
+
 const ANSICHAR* AuthLibraryAndroid::FGAuthClassName = "com/ninevastudios/unrealfirebase/FGAuth";
 
 JNI_METHOD void Java_com_ninevastudios_unrealfirebase_FGAuth_OnIdTokenChanged(JNIEnv* env, jclass clazz)
@@ -268,5 +278,24 @@ JNI_METHOD void Java_com_ninevastudios_unrealfirebase_FGAuth_OnGoogleSignInSucce
 		UFGAuthCredentials* Result = NewObject<UFGAuthCredentials>();
 		Result->Init(AndroidCredentials);
 		UFGAuthLibrary::SignInWithGoogleSuccessCallback.ExecuteIfBound(Result);
+	});
+}
+
+JNI_METHOD void Java_com_ninevastudios_unrealfirebase_FGAuth_OnSendSignInLinkToEmailSuccess(JNIEnv* env, jclass clazz)
+{
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
+		UFGAuthLibrary::SendSignInLinkSuccessCallback.ExecuteIfBound();
+	});
+}
+
+JNI_METHOD void Java_com_ninevastudios_unrealfirebase_FGAuth_OnSendSignInLinkToEmailError(JNIEnv* env, jclass clazz, jstring error)
+{
+	FString ErrorMessage = FJavaHelper::FStringFromParam(env, error);
+	UE_LOG(LogFirebaseGoodies, Error, TEXT("Send sign in link to email error: %s"), *ErrorMessage);
+
+	AsyncTask(ENamedThreads::GameThread, [=]()
+	{
+		UFGAuthLibrary::SendSignInLinkErrorCallback.ExecuteIfBound(ErrorMessage);
 	});
 }

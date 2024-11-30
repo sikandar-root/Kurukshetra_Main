@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google
+ * Copyright 2018 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -285,16 +285,17 @@ class DocumentReference {
           callback);
 
   /**
-   * @brief Returns true if this DocumentReference is valid, false if it is not
-   * valid. An invalid DocumentReference could be the result of:
-   *   - Creating a DocumentReference with the default constructor.
-   *   - Calling CollectionReference::Parent() on a CollectionReference that is
-   *     not a subcollection.
-   *   - Deleting your Firestore instance, which will invalidate all
-   *     DocumentReference instances associated with it.
+   * @brief Returns true if this `DocumentReference` is valid, false if it is
+   * not valid. An invalid `DocumentReference` could be the result of:
+   *   - Creating a `DocumentReference` using the default constructor.
+   *   - Moving from the `DocumentReference`.
+   *   - Calling `CollectionReference::Parent()` on a `CollectionReference` that
+   *     is not a subcollection.
+   *   - Deleting your Firestore instance, which will invalidate all the
+   *     `DocumentReference` instances associated with it.
    *
-   * @return true if this DocumentReference is valid, false if this
-   * DocumentReference is invalid.
+   * @return true if this `DocumentReference` is valid, false if this
+   * `DocumentReference` is invalid.
    */
   bool is_valid() const { return internal_ != nullptr; }
 

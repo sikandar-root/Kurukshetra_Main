@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google
+ * Copyright 2018 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -156,6 +156,19 @@ class WriteBatch {
    * @return A Future that will be resolved when the write finishes.
    */
   virtual Future<void> Commit();
+
+  /**
+   * @brief Returns true if this `WriteBatch` is valid, false if it is not
+   * valid. An invalid `WriteBatch` could be the result of:
+   *   - Creating a `WriteBatch` using the default constructor.
+   *   - Moving from the `WriteBatch`.
+   *   - Deleting your Firestore instance, which will invalidate all the
+   *     `WriteBatch` instances associated with it.
+   *
+   * @return true if this `WriteBatch` is valid, false if this `WriteBatch` is
+   * invalid.
+   */
+  bool is_valid() const { return internal_ != nullptr; }
 
  private:
   friend class FirestoreInternal;

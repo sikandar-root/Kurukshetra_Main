@@ -106,23 +106,23 @@ void UFirebaseSubsystem::InitDesktop(const UFirebaseGoodiesSettings* Settings) c
 void UFirebaseSubsystem::InitIos(const UFirebaseGoodiesSettings* FirebaseGoodiesSettings)
 {
 #if PLATFORM_IOS
-	__block FIROptions* options = [[FIROptions alloc] initWithGoogleAppID:FirebaseGoodiesSettings->GoogleAppId.GetNSString() GCMSenderID:FirebaseGoodiesSettings->GcmSenderId.GetNSString()];
-	options.APIKey = FirebaseGoodiesSettings->ApiKey.GetNSString();
-	options.bundleID = FirebaseGoodiesSettings->BundleId.GetNSString();
-	options.clientID = FirebaseGoodiesSettings->ClientId.GetNSString();
-	options.projectID = FirebaseGoodiesSettings->ProjectId.GetNSString();
-	options.androidClientID = FirebaseGoodiesSettings->AndroidClientId.GetNSString();
-	options.storageBucket = FirebaseGoodiesSettings->StorageBucket.GetNSString();
-	
-	NSString* DatabaseUrl = FirebaseGoodiesSettings->DatabaseUrl.GetNSString();
-	if ([DatabaseUrl length] != 0)
-	{
-		options.databaseURL = DatabaseUrl;
-	}
-
 	dispatch_async(dispatch_get_main_queue(), ^{
+		FIROptions* options = [[FIROptions alloc] initWithGoogleAppID:FirebaseGoodiesSettings->GoogleAppId.GetNSString() GCMSenderID:FirebaseGoodiesSettings->GcmSenderId.GetNSString()];
+		options.APIKey = FirebaseGoodiesSettings->ApiKey.GetNSString();
+		options.bundleID = FirebaseGoodiesSettings->BundleId.GetNSString();
+		options.clientID = FirebaseGoodiesSettings->ClientId.GetNSString();
+		options.projectID = FirebaseGoodiesSettings->ProjectId.GetNSString();
+		options.androidClientID = FirebaseGoodiesSettings->AndroidClientId.GetNSString();
+		options.storageBucket = FirebaseGoodiesSettings->StorageBucket.GetNSString();
+		NSString* DatabaseUrl = FirebaseGoodiesSettings->DatabaseUrl.GetNSString();
+		if ([DatabaseUrl length] != 0)
+		{
+			options.databaseURL = DatabaseUrl;
+		}
 		[FIRApp configureWithOptions:options];
+		
 		InitDbOptions(FirebaseGoodiesSettings); // otherwise causes crash because of race condition with init
+		
 
 		if (DynamicLinksHelper::WasAppOpenViaAppLink) {
 			UE_LOG(LogFirebaseGoodies, Verbose, TEXT("Application was open from Universal link."));
@@ -153,6 +153,11 @@ void UFirebaseSubsystem::InitIos(const UFirebaseGoodiesSettings* FirebaseGoodies
 
 	if (FirebaseGoodiesSettings->bEnableAPNForIOS)
 	{
+		FCoreDelegates::ApplicationReceivedRemoteNotificationDelegate.AddStatic([](FString json, int state) {
+			UE_LOG(LogFirebaseGoodies, Verbose, TEXT("Remote notification received: %s"), *json);
+			UFGCloudMessaging::OnRemoteNotificationReceivedCallback.ExecuteIfBound(json, state);
+		});
+		
 		dispatch_async(dispatch_get_main_queue(), ^{
 			MessagingDelegate = [FGCloudMessagingDelegate new];
 
@@ -182,10 +187,6 @@ void UFirebaseSubsystem::InitIos(const UFirebaseGoodiesSettings* FirebaseGoodies
 			}];
 
 			[[UIApplication sharedApplication] registerForRemoteNotifications];
-		});
-
-		FCoreDelegates::ApplicationReceivedRemoteNotificationDelegate.AddStatic([](FString json, int state) {
-			UFGCloudMessaging::OnRemoteNotificationReceivedCallback.ExecuteIfBound(json, state);
 		});
 	}
 #endif

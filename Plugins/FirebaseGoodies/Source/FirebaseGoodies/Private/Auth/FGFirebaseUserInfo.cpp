@@ -76,7 +76,7 @@ FString UFGFirebaseUserInfo::GetPhoneNumber() const
 
 bool UFGFirebaseUserInfo::IsUserInfoValid() const
 {
-	const bool bIsUserInfoValid = UserInfoImpl.IsValid();
+	const bool bIsUserInfoValid = UserInfoImpl && UserInfoImpl.IsValid();
 
 	if (!bIsUserInfoValid)
 	{

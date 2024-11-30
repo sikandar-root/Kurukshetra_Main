@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <string>
 
 #include "firebase/app.h"
@@ -270,6 +271,30 @@ void Terminate();
 /// @param[in] enabled true to enable analytics collection, false to disable.
 void SetAnalyticsCollectionEnabled(bool enabled);
 
+/// @brief The type of consent to set.
+///
+/// Supported consent types are mapped to corresponding constants in the Android
+/// and iOS SDKs. Omitting a type retains its previous status.
+enum ConsentType {
+  kConsentTypeAdStorage = 0,
+  kConsentTypeAnalyticsStorage,
+  kConsentTypeAdUserData,
+  kConsentTypeAdPersonalization
+};
+
+/// @brief The status value of the consent type.
+///
+/// Supported statuses are kConsentStatusGranted and kConsentStatusDenied.
+enum ConsentStatus { kConsentStatusGranted = 0, kConsentStatusDenied };
+
+/// @brief Sets the applicable end user consent state (e.g., for device
+/// identifiers) for this app on this device.
+///
+/// Use the consent map to specify individual consent type values. Settings are
+/// persisted across app sessions. By default consent types are set to
+/// "granted".
+void SetConsent(const std::map<ConsentType, ConsentStatus>& consent_settings);
+
 /// @brief Log an event with one string parameter.
 ///
 /// @param[in] name Name of the event to log. Should contain 1 to 40
@@ -433,6 +458,7 @@ void LogEvent(const char* name);
 // in the C# code.
 %csmethodmodifiers LogEvent "public unsafe"
 #endif  // SWIG
+// clang-format on
 
 /// @brief Log an event with associated parameters.
 ///
@@ -456,7 +482,26 @@ void LogEvent(const char* name);
 /// array.
 void LogEvent(const char* name, const Parameter* parameters,
               size_t number_of_parameters);
-// clang-format on
+
+/// Initiates on-device conversion measurement given a user email address on iOS
+/// and tvOS (no-op on Android). On iOS and tvOS, this method requires the
+/// dependency GoogleAppMeasurementOnDeviceConversion to be linked in,
+/// otherwise the invocation results in a no-op.
+/// @param[in] email_address User email address. Include a domain name for all
+/// email addresses (e.g. gmail.com or hotmail.co.jp).
+void InitiateOnDeviceConversionMeasurementWithEmailAddress(
+    const char* email_address);
+
+/// Initiates on-device conversion measurement given a phone number in E.164
+/// format on iOS (no-op on Android). On iOS, requires dependency
+/// GoogleAppMeasurementOnDeviceConversion to be linked in, otherwise it is a
+/// no-op.
+/// @param phone_number User phone number. Must be in E.164 format, which means
+/// it must be
+///   limited to a maximum of 15 digits and must include a plus sign (+) prefix
+///   and country code with no dashes, parentheses, or spaces.
+void InitiateOnDeviceConversionMeasurementWithPhoneNumber(
+    const char* phone_number);
 
 /// @brief Set a user property to the given value.
 ///
@@ -517,6 +562,22 @@ Future<std::string> GetAnalyticsInstanceId();
 ///
 /// @returns Object which can be used to retrieve the analytics instance ID.
 Future<std::string> GetAnalyticsInstanceIdLastResult();
+
+/// Asynchronously retrieves the identifier of the current app
+/// session.
+///
+/// The session ID retrieval could fail due to Analytics collection
+/// disabled, or if the app session was expired.
+///
+/// @returns Object which can be used to retrieve the identifier of the current
+/// app session.
+Future<int64_t> GetSessionId();
+
+/// Get the result of the most recent GetSessionId() call.
+///
+/// @returns Object which can be used to retrieve the identifier of the current
+/// app session.
+Future<int64_t> GetSessionIdLastResult();
 
 }  // namespace analytics
 }  // namespace firebase

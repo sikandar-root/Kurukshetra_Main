@@ -97,17 +97,17 @@ void AnalyticsDesktop::LogEventWithParameters(const FString& EventName,
 		char* parameterName = FGUtils::GetStringCopy(Parameters[i]->GetName());
 		switch (Parameters[i]->GetType())
 		{
-		case EParameterType::Integer:
+		case UFGAnalyticsParameterType::Integer:
 			{
 				parameters.Add({parameterName, Parameters[i]->GetInt()});
 				break;
 			}
-		case EParameterType::Float:
+		case UFGAnalyticsParameterType::Float:
 			{
 				parameters.Add({parameterName, Parameters[i]->GetFloat()});
 				break;
 			}
-		case EParameterType::String:
+		case UFGAnalyticsParameterType::String:
 			{
 				parameters.Add({parameterName, FGUtils::GetStringCopy(Parameters[i]->GetString())});
 				break;

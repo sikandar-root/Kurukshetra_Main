@@ -11,7 +11,7 @@ class FIREBASEGOODIES_API UFGAuthCredentials : public UObject
 {
 	GENERATED_BODY()
 
-	virtual ~UFGAuthCredentials();
+	virtual ~UFGAuthCredentials() override;
 
 public:
 	/**
@@ -26,7 +26,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Firebase Goodies|Auth|Credentials")
 	bool AreValid() const;
 
-	void Init(TSharedPtr<IFirebaseAuthCredentials> Credentials);
+	void Init(const TSharedPtr<IFirebaseAuthCredentials>& Credentials);
 	TSharedPtr<IFirebaseAuthCredentials> GetCredentials();
 
 private:

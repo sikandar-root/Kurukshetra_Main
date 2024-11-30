@@ -2,6 +2,7 @@
 
 #include "FGValueVariantUtils.h"
 
+#import <FirebaseCore/FirebaseCore.h>
 #import <FirebaseFirestore/FirebaseFirestore.h>
 
 #include "FirebaseGoodiesLog.h"

@@ -1,8 +1,8 @@
 // Copyright (c) 2022 Nineva Studios
 
-#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
-
 #include "MutableDataDesktop.h"
+
+#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
 #include "Desktop/FGVariantUtils.h"
 

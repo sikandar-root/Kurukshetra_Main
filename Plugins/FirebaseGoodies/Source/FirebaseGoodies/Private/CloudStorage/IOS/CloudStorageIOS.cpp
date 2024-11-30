@@ -5,7 +5,7 @@
 #include "FirebaseGoodiesLog.h"
 #include "CloudStorage/FGCloudStorage.h"
 
-#import <FirebaseStorage/FirebaseStorage.h>
+#import <FirebaseStorage/FirebaseStorage-Swift.h>
 
 #include "CloudStorage/Callbacks/FGCloudStorageDeleteFileCallback.h"
 #include "CloudStorage/Callbacks/FGCloudStorageDownloadInMemoryCallback.h"
@@ -56,7 +56,7 @@ void CloudStorageIOS::UploadFromDataInMemory(const TArray<uint8>& FileInMemory, 
 		}
 	}];
 	
-	FIRStorageHandle observer = [uploadTask observeStatus:FIRStorageTaskStatusProgress handler:^(FIRStorageTaskSnapshot *snapshot) {
+	[uploadTask observeStatus:FIRStorageTaskStatusProgress handler:^(FIRStorageTaskSnapshot *snapshot) {
 		int progress = (int) (snapshot.progress.fractionCompleted * 100);
 		NativeCallback->ExecuteProgress(progress);
 	}];
@@ -90,7 +90,7 @@ void CloudStorageIOS::UploadFromLocalFile(const FString& LocalFilePath, const FS
 		}
 	}];
 	
-	FIRStorageHandle observer = [uploadTask observeStatus:FIRStorageTaskStatusProgress handler:^(FIRStorageTaskSnapshot *snapshot) {
+	[uploadTask observeStatus:FIRStorageTaskStatusProgress handler:^(FIRStorageTaskSnapshot *snapshot) {
 		int progress = (int) (snapshot.progress.fractionCompleted * 100);
 		
 		NativeCallback->ExecuteProgress(progress);
@@ -164,7 +164,7 @@ void CloudStorageIOS::DownloadToLocalFile(const FString& FileStoragePath, const 
 			CFBridgingRelease(fileUrl);}
 	}];
 		
-	FIRStorageHandle observer = [downloadTask observeStatus:FIRStorageTaskStatusProgress handler:^(FIRStorageTaskSnapshot *snapshot) {
+	[downloadTask observeStatus:FIRStorageTaskStatusProgress handler:^(FIRStorageTaskSnapshot *snapshot) {
 		int progress = (int) (snapshot.progress.fractionCompleted * 100);		
 		NativeCallback->ExecuteProgress(progress);
 	}];

@@ -7,8 +7,7 @@
 #include "FirebaseGoodiesLog.h"
 #include "Async/Async.h"
 #include "Common/FGValueVariantAccess.h"
-#import <FirebaseFunctions/FirebaseFunctions.h>
-
+#import <FirebaseFunctions/FirebaseFunctions-Swift.h>
 #include "CloudFunctions/Callbacks/FGCloudFunctionsStringCallback.h"
 #include "CloudFunctions/Callbacks/FGCloudFunctionsIntCallback.h"
 #include "CloudFunctions/Callbacks/FGCloudFunctionsFloatCallback.h"

@@ -13,11 +13,19 @@ class FIREBASEGOODIES_API UFirebaseGoodiesSettings : public UObject
 	GENERATED_BODY()
 
 public:
+	/** I am using 4.x (This is done for backporting compatibility to be simpler) */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "I am using UE 4.x"), Category="Compatibility")
+	bool bUseUE4 = false;
+
 	/** Path to google-services.json file required in order to properly configure Firebase for Android app */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Android", meta=(EditCondition = "!bIsGoogleServicesJsonInThePluginRootFolder", EditConditionHides))
 	FFilePath GoogleServicesJsonPath;
 
-	/** Set to to 'true' if you decide to put your google-services.json file into your plugin root directory (Next to FirebaseGoodies_Android_UPL.xml in Plugins/FirebaseGoodies/Source/FirebaseGoodies). */
+	/** Path to GoogleService-Info.plist file required in order to properly configure Firebase for iOS app */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "iOS")
+	FFilePath GoogleServicesPlistPath;
+
+	/** Set to 'true' if you decide to put your google-services.json file into your plugin root directory (Next to FirebaseGoodies_Android_UPL.xml in Plugins/FirebaseGoodies/Source/FirebaseGoodies). */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "My google-services.json file is in my plugin root directory."), Category = "Android")
 	bool bIsGoogleServicesJsonInThePluginRootFolder = false;
 
@@ -25,7 +33,11 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "Use custom gradle version (uncheck if on UE 5.3+)"), Category = "Android")
 	bool bUseGradleVersionFromPlugin = true;
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "Copy google-services.json to AFSProject. Fixes ussue with Android File Server plugin"), Category = "Android")
+	/** Firebase BOM version for Android. See https://firebase.google.com/docs/android/learn-more#bom */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "Firebase BoM version"), Category = "Android")
+	FString BomVersion = "32.7.2";
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "Copy google-services.json to AFSProject. Fixes issue with Android File Server plugin"), Category = "Android")
 	bool bCopyServicesJsonToAFSProject = false;
 
 	/** Whether to generate and upload crashlytics debug symbols for debug Android builds. */
@@ -60,10 +72,6 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Analytics|iOS", Meta = (DisplayName = "IDFV collection enabled"))
 	bool bIDFVCollectionEnabled = true;
 
-	/** Path to GoogleService-Info.plist file required in order to properly configure Firebase for iOS app */
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "iOS")
-	FFilePath GoogleServicesPlistPath;
-
 	/** Whether to add the Apple Push Notifications capability to iOS builds. */
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "Enable Apple Push Notifications for iOS"), Category = "iOS")
 	bool bEnableAPNForIOS = false;
@@ -84,8 +92,8 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Desktop", Meta = (DisplayName = "Enable editor support. Requires plugin to be placed in the project directory. Plugin needs to be rebuilt after changing this."))
 	bool bEnableEditorSupport = false;
 
-	/** Settings parsed from google-services.json */
-	UPROPERTY(Config, VisibleAnywhere, AdvancedDisplay, BlueprintReadOnly, Meta = (DisplayName = "Client Id"), Category = "Android")
+	/** Required for Google sign-in to work on Android. Make sure it matches your Web Client ID in Web SDK configuration section when configuring Google sign-in method in Firebase dashboard. Setting parsed from google-services.json if available */
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Meta = (DisplayName = "OAuth 2.0 Web Client Id"), Category = "Auth|Android")
 	FString AndroidOauthClientID;
 
 	/** Settings parsed from google-services.json */

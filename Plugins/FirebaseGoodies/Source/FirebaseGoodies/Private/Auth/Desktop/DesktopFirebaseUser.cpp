@@ -1,37 +1,38 @@
-#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
-
 #include "DesktopFirebaseUser.h"
 
+#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
+
+#include "FGUtils.h"
 #include "Auth/Desktop/DesktopFirebaseUserInfo.h"
 #include "FirebaseGoodiesLog.h"
 #include "DesktopFirebaseAuthCredentials.h"
 #include "Async/Async.h"
 
-DesktopFirebaseUser::DesktopFirebaseUser(firebase::auth::User* User)
+DesktopFirebaseUser::DesktopFirebaseUser(firebase::auth::User User)
 {
 	DesktopUser = User;
 }
 
 bool DesktopFirebaseUser::IsAnonymous()
 {
-	return DesktopUser->is_anonymous();
+	return DesktopUser.is_anonymous();
 }
 
 bool DesktopFirebaseUser::IsUserValid()
 {
-	return DesktopUser != nullptr;
+	return DesktopUser.is_valid();
 }
 
 void DesktopFirebaseUser::Delete(const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
-	const auto Task = DesktopUser->Delete();
+	const auto Task = DesktopUser.Delete();
 	Task.AddOnCompletion([this](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -41,7 +42,7 @@ void DesktopFirebaseUser::Delete(const FOnUserVoidTaskCompleted& OnSuccess, cons
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -50,12 +51,13 @@ void DesktopFirebaseUser::Delete(const FOnUserVoidTaskCompleted& OnSuccess, cons
 void DesktopFirebaseUser::LinkWithCredentials(UFGAuthCredentials* Credentials, const FOnUserUpdated& OnSuccess, const FOnUserOperationError& OnError)
 {
 	const auto FirebaseAuthCredentials = StaticCastSharedPtr<DesktopFirebaseAuthCredentials>(Credentials->GetCredentials());
-	const auto Task = DesktopUser->LinkWithCredential(FirebaseAuthCredentials->GetDesktopCredential());
-	Task.AddOnCompletion([this](const firebase::Future<firebase::auth::User*>& Callback)
+	const auto Task = DesktopUser.LinkWithCredential(FirebaseAuthCredentials->GetDesktopCredential());
+	Task.AddOnCompletion([this](const firebase::Future<firebase::auth::AuthResult>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
-			const auto NewDesktopUser = MakeShareable(new DesktopFirebaseUser(*Callback.result()));
+			const firebase::auth::User ResultUser = Callback.result()->user;
+			const auto NewDesktopUser = MakeShareable(new DesktopFirebaseUser(ResultUser));
 
 			AsyncTask(ENamedThreads::GameThread, [this, NewDesktopUser]
 			{
@@ -71,7 +73,7 @@ void DesktopFirebaseUser::LinkWithCredentials(UFGAuthCredentials* Credentials, c
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -80,14 +82,14 @@ void DesktopFirebaseUser::LinkWithCredentials(UFGAuthCredentials* Credentials, c
 void DesktopFirebaseUser::Reauthenticate(UFGAuthCredentials* Credentials, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
 	const auto FirebaseAuthCredentials = StaticCastSharedPtr<DesktopFirebaseAuthCredentials>(Credentials->GetCredentials());
-	const auto Task = DesktopUser->Reauthenticate(FirebaseAuthCredentials->GetDesktopCredential());
+	const auto Task = DesktopUser.Reauthenticate(FirebaseAuthCredentials->GetDesktopCredential());
 	Task.AddOnCompletion([this](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -97,7 +99,7 @@ void DesktopFirebaseUser::Reauthenticate(UFGAuthCredentials* Credentials, const 
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -105,14 +107,14 @@ void DesktopFirebaseUser::Reauthenticate(UFGAuthCredentials* Credentials, const 
 
 void DesktopFirebaseUser::Reload(const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
-	const auto Task = DesktopUser->Reload();
+	const auto Task = DesktopUser.Reload();
 	Task.AddOnCompletion([this](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -122,7 +124,7 @@ void DesktopFirebaseUser::Reload(const FOnUserVoidTaskCompleted& OnSuccess, cons
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -130,14 +132,14 @@ void DesktopFirebaseUser::Reload(const FOnUserVoidTaskCompleted& OnSuccess, cons
 
 void DesktopFirebaseUser::SendEmailVerification(const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
-	const auto Task = DesktopUser->SendEmailVerification();
+	const auto Task = DesktopUser.SendEmailVerification();
 	Task.AddOnCompletion([this](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -147,7 +149,7 @@ void DesktopFirebaseUser::SendEmailVerification(const FOnUserVoidTaskCompleted& 
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -155,12 +157,13 @@ void DesktopFirebaseUser::SendEmailVerification(const FOnUserVoidTaskCompleted& 
 
 void DesktopFirebaseUser::UnlinkProvider(const FString& Provider, const FOnUserUpdated& OnSuccess, const FOnUserOperationError& OnError)
 {
-	const auto Task = DesktopUser->Unlink(TCHAR_TO_ANSI(*Provider));
-	Task.AddOnCompletion([this](const firebase::Future<firebase::auth::User*>& Callback)
+	const auto Task = DesktopUser.Unlink(TCHAR_TO_ANSI(*Provider));
+	Task.AddOnCompletion([this](const firebase::Future<firebase::auth::AuthResult>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
-			const auto NewDesktopUser = MakeShareable(new DesktopFirebaseUser(*Callback.result()));
+			const firebase::auth::User ResultUser = Callback.result()->user;
+			const auto NewDesktopUser = MakeShareable(new DesktopFirebaseUser(ResultUser));
 
 			AsyncTask(ENamedThreads::GameThread, [this, NewDesktopUser]
 			{
@@ -176,7 +179,7 @@ void DesktopFirebaseUser::UnlinkProvider(const FString& Provider, const FOnUserU
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -184,14 +187,14 @@ void DesktopFirebaseUser::UnlinkProvider(const FString& Provider, const FOnUserU
 
 void DesktopFirebaseUser::UpdateEmail(const FString& Email, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
-	const auto Task = DesktopUser->UpdateEmail(TCHAR_TO_ANSI(*Email));
+	const auto Task = DesktopUser.UpdateEmail(TCHAR_TO_ANSI(*Email));
 	Task.AddOnCompletion([this](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -201,7 +204,7 @@ void DesktopFirebaseUser::UpdateEmail(const FString& Email, const FOnUserVoidTas
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -209,14 +212,14 @@ void DesktopFirebaseUser::UpdateEmail(const FString& Email, const FOnUserVoidTas
 
 void DesktopFirebaseUser::UpdatePassword(const FString& Password, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
-	const auto Task = DesktopUser->UpdatePassword(TCHAR_TO_ANSI(*Password));
+	const auto Task = DesktopUser.UpdatePassword(TCHAR_TO_ANSI(*Password));
 	Task.AddOnCompletion([this](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -226,7 +229,7 @@ void DesktopFirebaseUser::UpdatePassword(const FString& Password, const FOnUserV
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -234,15 +237,18 @@ void DesktopFirebaseUser::UpdatePassword(const FString& Password, const FOnUserV
 
 void DesktopFirebaseUser::UpdatePhoneNumber(UFGAuthCredentials* Credentials, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
+	// TODO check this mess
 	const auto FirebaseAuthCredentials = StaticCastSharedPtr<DesktopFirebaseAuthCredentials>(Credentials->GetCredentials());
-	const auto Task = DesktopUser->UpdatePhoneNumberCredential(FirebaseAuthCredentials->GetDesktopCredential());
-	Task.AddOnCompletion([this](const firebase::Future<firebase::auth::User*>& Callback)
+	const firebase::auth::PhoneAuthCredential Credential = FirebaseAuthCredentials->GetPhoneCredential();
+	
+	const auto Task = DesktopUser.UpdatePhoneNumberCredential(Credential);
+	Task.AddOnCompletion([this](const firebase::Future<firebase::auth::User>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -252,7 +258,7 @@ void DesktopFirebaseUser::UpdatePhoneNumber(UFGAuthCredentials* Credentials, con
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -261,17 +267,17 @@ void DesktopFirebaseUser::UpdatePhoneNumber(UFGAuthCredentials* Credentials, con
 void DesktopFirebaseUser::UpdateProfile(const FString& DisplayName, const FString& AvatarUrl, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
 	firebase::auth::User::UserProfile Profile;
-	Profile.display_name = TCHAR_TO_ANSI(*DisplayName);
-	Profile.photo_url = TCHAR_TO_ANSI(*AvatarUrl);
+	Profile.display_name = FGUtils::GetStringCopy(DisplayName);
+	Profile.photo_url = FGUtils::GetStringCopy(AvatarUrl);
 
-	const auto Task = DesktopUser->UpdateUserProfile(Profile);
+	const auto Task = DesktopUser.UpdateUserProfile(Profile);
 	Task.AddOnCompletion([this](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
 			AsyncTask(ENamedThreads::GameThread, [this]
 			{
-				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str());
+				UFGFirebaseUser::OnUserVoidTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str());
 			});
 		}
 		else
@@ -281,7 +287,7 @@ void DesktopFirebaseUser::UpdateProfile(const FString& DisplayName, const FStrin
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -289,15 +295,15 @@ void DesktopFirebaseUser::UpdateProfile(const FString& DisplayName, const FStrin
 
 void DesktopFirebaseUser::GetToken(bool ForceRefresh, const FOnUserStringTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
-	const auto Task = DesktopUser->GetToken(ForceRefresh);
+	const auto Task = DesktopUser.GetToken(ForceRefresh);
 	Task.AddOnCompletion([this](const firebase::Future<std::string>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
-			const FString Token = (*Callback.result()).c_str();
+			const FString Token = Callback.result()->c_str();
 			AsyncTask(ENamedThreads::GameThread, [this, Token]
 			{
-				UFGFirebaseUser::OnUserStringTaskCompletedCallback.ExecuteIfBound(DesktopUser->uid().c_str(), Token);
+				UFGFirebaseUser::OnUserStringTaskCompletedCallback.ExecuteIfBound(DesktopUser.uid().c_str(), Token);
 			});
 		}
 		else
@@ -307,7 +313,7 @@ void DesktopFirebaseUser::GetToken(bool ForceRefresh, const FOnUserStringTaskCom
 
 			AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]
 			{
-				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser->uid().c_str(), ErrorMessage);
+				UFGFirebaseUser::OnUserOperationErrorCallback.ExecuteIfBound(DesktopUser.uid().c_str(), ErrorMessage);
 			});
 		}
 	});
@@ -316,7 +322,7 @@ void DesktopFirebaseUser::GetToken(bool ForceRefresh, const FOnUserStringTaskCom
 TArray<TSharedPtr<IFirebaseUserInfo>> DesktopFirebaseUser::GetProviderData()
 {
 	TArray<TSharedPtr<IFirebaseUserInfo>> Result;
-	for (firebase::auth::User::UserInfoInterface* UserInfo : DesktopUser->provider_data())
+	for (const auto UserInfo : DesktopUser.provider_data())
 	{
 		Result.Add(MakeShareable(new DesktopFirebaseUserInfo(UserInfo)));
 	}
@@ -325,47 +331,48 @@ TArray<TSharedPtr<IFirebaseUserInfo>> DesktopFirebaseUser::GetProviderData()
 
 FString DesktopFirebaseUser::GetUid()
 {
-	return DesktopUser->uid().c_str();
+	return DesktopUser.uid().c_str();
 }
 
 FString DesktopFirebaseUser::GetProviderId()
 {
-	return DesktopUser->provider_id().c_str();
+	return DesktopUser.provider_id().c_str();
 }
 
 FString DesktopFirebaseUser::GetDisplayName()
 {
-	return DesktopUser->display_name().c_str();
+	return DesktopUser.display_name().c_str();
 }
 
 FString DesktopFirebaseUser::GetPhotoUrl()
 {
-	return DesktopUser->photo_url().c_str();
+	return DesktopUser.photo_url().c_str();
 }
 
 FString DesktopFirebaseUser::GetEmail()
 {
-	return DesktopUser->email().c_str();
+	return DesktopUser.email().c_str();
 }
 
 FString DesktopFirebaseUser::GetPhoneNumber()
 {
-	return DesktopUser->phone_number().c_str();
+	return DesktopUser.phone_number().c_str();
 }
 
 bool DesktopFirebaseUser::IsEmailVerified()
 {
-	return DesktopUser->is_email_verified();
+	return DesktopUser.is_email_verified();
 }
 
 void DesktopFirebaseUser::GetIdToken(bool ForceRefresh, const FOnGetTokenResultCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
+	UE_LOG(LogFirebaseGoodies, Verbose, TEXT("No desktop implementation available"));
 	// No desktop implementation
 }
 
 bool DesktopFirebaseUser::IsUserInfoValid()
 {
-	return DesktopUser != nullptr;
+	return DesktopUser.is_valid();
 }
 
 #endif

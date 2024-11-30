@@ -8,7 +8,10 @@
         <log text="[FirebaseGoodies] Android UPL initialization"/>
 
         <setStringFromProperty result="GoogleServicesJsonPathToEdit" ini="Engine" section="/Script/FirebaseGoodies.FirebaseGoodiesSettings" property="GoogleServicesJsonPath"/>
+        <!-- See https://firebase.google.com/docs/android/learn-more#bom -->
+        <setStringFromProperty result="BomVersion" ini="Engine" section="/Script/FirebaseGoodies.FirebaseGoodiesSettings" property="BomVersion" default="32.7.2"/>
         <setBoolFromProperty result="IsGoogleServicesJsonInThePluginRootFolder" ini="Engine" section="/Script/FirebaseGoodies.FirebaseGoodiesSettings" property="bIsGoogleServicesJsonInThePluginRootFolder" default="false"/>
+        <setBoolFromProperty result="IsUE4" ini="Engine" section="/Script/FirebaseGoodies.FirebaseGoodiesSettings" property="bUseUE4" default="false"/>
         <setBoolFromProperty result="AlsoCopyServicesJsonToAFSProject" ini="Engine" section="/Script/FirebaseGoodies.FirebaseGoodiesSettings" property="bCopyServicesJsonToAFSProject" default="false"/>
         <setBoolFromProperty result="UseCustomGradle" ini="Engine" section="/Script/FirebaseGoodies.FirebaseGoodiesSettings" property="bUseGradleVersionFromPlugin" default="true"/>
         <setStringReplace result="HalfwayEditedGoogleServicesJsonPath" source="$S(GoogleServicesJsonPathToEdit)" find="(FilePath=&quot;" with=""/>
@@ -35,11 +38,19 @@
         <setBoolAnd result="UploadDebugSymbols" arg1="$B(EnableCrashlyticsUploadDebug)" arg2="$B(notDistribution)"/>
         <setBoolAnd result="UploadReleaseSymbols" arg1="$B(EnableCrashlyticsUploadRelease)" arg2="$B(Distribution)"/>
 
+        <setStringFromProperty result="AndroidPackageName" ini="Engine" section="/Script/AndroidRuntimeSettings.AndroidRuntimeSettings" property="PackageName" default=""/>
+
+        <setBoolIsEqual result="bEngineMajorVersionEqual5" arg1="$I(EngineMajorVersion)" arg2="5" />
+        <setBoolIsGreaterEqual result="bEngineMinorVersionGreaterEqual5" arg1="$I(EngineMinorVersion)" arg2="5" />
+
+        <setBoolAnd result="bEngineVersionIs5point5orHigher" arg1="$B(bEngineMajorVersionEqual5)" arg2="$B(bEngineMinorVersionGreaterEqual5)"/>
+
         <!--  Is it UE5 ? -->
         <log text="[FirebaseGoodies] Engine location: $S(EngineDir)"/>
-        <setBoolContains result="bIsUnrealEngine5" source="$S(EngineDir)" find="UE_5"/>
+        <log text="[FirebaseGoodies] Android package: $S(AndroidPackageName)"/>
 
         <log text="[FirebaseGoodies] Google Services Json Path: $S(GoogleServicesJsonPath)"/>
+        <log text="[FirebaseGoodies] Android Firebase BoM Version: $S(BomVersion)"/>
     </init>
 
     <prebuildCopies>
@@ -63,21 +74,21 @@
             </false>
         </if>
 
-        <!--    Copy java and gradle files-->
+        <!--  Copy java and gradle files-->
         <copyDir src="$S(PluginDir)/Private/Java" dst="$S(BuildDir)/src/com/ninevastudios/unrealfirebase"/>
         <copyDir src="$S(PluginDir)/Private/Java_UE5" dst="$S(BuildDir)/src/com/ninevastudios/unrealfirebase"/>
 
         <!-- UE4 is no longer supported - do not break things for UE5 user that build from source, this is left for history or if someone needs to backport to UE4       -->
-        <!--        <if condition="bIsUnrealEngine5">-->
-        <!--            <true>-->
-        <!--                <log text="[FirebaseGoodies] We are in UE5..."/>-->
-        <!--                <copyDir src="$S(PluginDir)/Private/Java_UE5" dst="$S(BuildDir)/src/com/ninevastudios/unrealfirebase"/>-->
-        <!--            </true>-->
-        <!--            <false>-->
-        <!--                <log text="[FirebaseGoodies] We are in UE4..."/>-->
-        <!--                <copyDir src="$S(PluginDir)/Private/Java_UE4" dst="$S(BuildDir)/src/com/ninevastudios/unrealfirebase"/>-->
-        <!--            </false>-->
-        <!--        </if>-->
+        <if condition="IsUE4">
+            <true>
+                <log text="[FirebaseGoodies] We are in UE4..."/>
+                <copyDir src="$S(PluginDir)/Private/Java_UE4" dst="$S(BuildDir)/src/com/ninevastudios/unrealfirebase"/>
+            </true>
+            <false>
+                <log text="[FirebaseGoodies] We are in UE5..."/>
+                <copyDir src="$S(PluginDir)/Private/Java_UE5" dst="$S(BuildDir)/src/com/ninevastudios/unrealfirebase"/>
+            </false>
+        </if>
 
         <if condition="UseCustomGradle">
             <true>
@@ -141,6 +152,7 @@
 
         <if condition="AdvertisingIdCollectionEnabled">
             <true>
+                <addPermission android:name="com.google.android.gms.permission.AD_ID"/>
                 <addElements tag="application">
                     <meta-data android:name="google_analytics_adid_collection_enabled" android:value="true"/>
                 </addElements>
@@ -178,6 +190,23 @@
             </false>
         </if>
 
+        <!-- Cloud messaging, TODO: make configurable  -->
+        <addPermission android:name="android.permission.POST_NOTIFICATIONS"/>
+        
+        <setElement result="Permission" value="permission"/>
+        <addAttribute tag="$Permission" name="android:name" value="$S(AndroidPackageName).permission.C2D_MESSAGE"/>
+        <addAttribute tag="$Permission" name="android:protectionLevel" value="signature"/>
+        <addElement tag="manifest" name="Permission"/>
+        
+        <setElement result="UsesPermission" value="uses-permission"/>
+        <addAttribute tag="$UsesPermission" name="android:name" value="$S(AndroidPackageName).permission.C2D_MESSAGE"/>
+        <addElement tag="manifest" name="UsesPermission"/>
+
+        <addElements tag="application">
+            <!-- You can change the default notification icon here, it must be a part of your android app inside res/drawable folder of the Android project -->
+            <meta-data android:resource="@drawable/icon" android:name="com.google.firebase.messaging.default_notification_icon"/>
+        </addElements>
+        
         <addElements tag="application">
             <activity android:name="com.ninevastudios.unrealfirebase.FGAuthIntermediateActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar" android:exported="false"/>
             <service android:name="com.ninevastudios.unrealfirebase.FGMessageReceiver" android:exported="false">
@@ -192,12 +221,25 @@
     </androidManifestUpdates>
 
     <buildscriptGradleAdditions>
-        <insert>
-            dependencies {
-            classpath 'com.google.gms:google-services:4.3.10'
-            classpath 'com.google.firebase:firebase-crashlytics-gradle:2.8.1'
-            }
-        </insert>
+        <if condition="bEngineVersionIs5point5orHigher">
+            <true>
+                <insert>
+                    dependencies {
+                        classpath 'com.google.gms:google-services:4.4.1'
+                        classpath 'com.google.firebase:firebase-crashlytics-gradle:3.0.2'
+                    }
+                </insert>
+            </true>
+            <false>
+                <insert>
+                    dependencies {
+                        classpath 'com.google.gms:google-services:4.4.1'
+                        classpath 'com.google.firebase:firebase-crashlytics-gradle:2.9.9'
+                    }
+                </insert>
+            </false>
+        </if>
+
     </buildscriptGradleAdditions>
 
     <buildGradleAdditions>
@@ -210,21 +252,21 @@
             }
 
             dependencies {
-            implementation platform('com.google.firebase:firebase-bom:30.3.1')
-
-            implementation 'com.google.firebase:firebase-core'
+        </insert>
+        <insertValue value="implementation platform('com.google.firebase:firebase-bom:$S(BomVersion)')"/>
+        <insertNewline/>
+        <insert>
+            implementation 'com.google.firebase:firebase-analytics'
             implementation 'com.google.firebase:firebase-config'
             implementation 'com.google.firebase:firebase-database'
             implementation 'com.google.firebase:firebase-storage:'
             implementation 'com.google.firebase:firebase-auth'
+            implementation 'com.google.firebase:firebase-crashlytics'
             implementation 'com.google.firebase:firebase-crashlytics-ndk'
             implementation 'com.google.firebase:firebase-messaging'
             implementation 'com.google.firebase:firebase-functions'
             implementation 'com.google.firebase:firebase-firestore'
             implementation 'com.google.firebase:firebase-dynamic-links'
-            implementation 'com.google.android.gms:play-services-nearby:18.3.0'
-            implementation 'com.google.android.gms:play-services-auth:20.3.0'
-            implementation 'com.google.android.gms:play-services-games:22.0.1'
             }
 
             repositories {
@@ -326,7 +368,7 @@
     <buildscriptGradleAdditions>
         <insert>
             dependencies {
-            classpath 'com.android.tools.build:gradle:4.1.0'
+            classpath 'com.android.tools.build:gradle:7.4.2'
             }
         </insert>
     </buildscriptGradleAdditions>
@@ -353,4 +395,16 @@
             _ninevaIsResumed = true;
         </insert>
     </gameActivityOnResumeAdditions>
+
+    <gameActivityImportAdditions>
+        <insert>
+            import com.ninevastudios.unrealfirebase.FGAuth;
+        </insert>
+    </gameActivityImportAdditions>
+
+    <gameActivityOnActivityResultAdditions>
+        <insert>
+            FGAuth.processSignInWithGoogleResult(requestCode, resultCode, data);
+        </insert>
+    </gameActivityOnActivityResultAdditions>
 </root>

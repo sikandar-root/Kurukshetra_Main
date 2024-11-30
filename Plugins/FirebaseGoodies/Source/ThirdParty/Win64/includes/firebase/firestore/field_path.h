@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google
+ * Copyright 2018 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,6 +123,17 @@ class FieldPath final {
   static FieldPath DocumentId();
 
   /**
+   * @brief Returns true if this `FieldPath` is valid, false if it is not valid.
+   * An invalid `FieldPath` could be the result of:
+   *   - Creating a `FieldPath` using the default constructor.
+   *   - Moving from the `FieldPath`.
+   *
+   * @return true if this `FieldPath` is valid, false if this `FieldPath` is
+   * invalid.
+   */
+  bool is_valid() const { return internal_ != nullptr; }
+
+  /**
    * Returns a string representation of this `FieldPath` for
    * logging/debugging purposes.
    *
@@ -153,6 +164,7 @@ class FieldPath final {
   friend bool operator!=(const FieldPath& lhs, const FieldPath& rhs);
   friend struct std::hash<FieldPath>;
 
+  friend class Filter;
   friend class DocumentSnapshot;  // For access to `FromDotSeparatedString`
   friend class Query;
   friend class QueryInternal;

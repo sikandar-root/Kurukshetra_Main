@@ -15,6 +15,7 @@
 #if PLATFORM_IOS
 #import <FirebaseMessaging/FirebaseMessaging.h>
 #import <FirebaseInstallations/FirebaseInstallations.h>
+#include "IOSAppDelegate.h"
 #endif
 
 #if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
@@ -37,6 +38,34 @@ FCloudMessagingStringDelegate UFGCloudMessaging::OnNewTokenCallback;
 FCloudMessagingRemoteNotificationDelegate UFGCloudMessaging::OnRemoteNotificationReceivedCallback;
 
 const ANSICHAR* UFGCloudMessaging::FGCloudMessagingClassName = "com/ninevastudios/unrealfirebase/FGCloudMessaging";
+
+FString UFGCloudMessaging::GetLaunchNotificationPayloadJson()
+{
+#if PLATFORM_IOS
+		IOSAppDelegate* AppDelegate = [IOSAppDelegate GetDelegate];
+		if (AppDelegate.launchOptions != nil && [AppDelegate.launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey] != nil)
+		{
+			NSDictionary *userInfo = AppDelegate.launchOptions[UIApplicationLaunchOptionsRemoteNotificationKey];
+			NSError *error;
+			NSData *jsonData = [NSJSONSerialization dataWithJSONObject:userInfo 
+															   options:0
+																 error:&error];
+			NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+			if (!jsonData)
+			{
+				UE_LOG(LogFirebaseGoodies, Error, TEXT("Failed converting NSDictionary to JSON"));
+			}
+			else
+			{
+				FString Result = FString(jsonString);
+				UE_LOG(LogFirebaseGoodies, Warning, TEXT("App was open via notification, key: %s"), *Result);
+				return Result;
+			}
+		}
+#endif
+	
+	return "";
+}
 
 void UFGCloudMessaging::GetInstanceIdData(const FCloudMessagingTwoStringDelegate& OnSuccess,
                                           const FCloudMessagingStringDelegate& OnError)

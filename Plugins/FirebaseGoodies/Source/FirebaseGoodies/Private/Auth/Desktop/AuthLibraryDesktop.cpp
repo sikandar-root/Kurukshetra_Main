@@ -1,6 +1,6 @@
-#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
-
 #include "AuthLibraryDesktop.h"
+
+#if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
 #include "DesktopFirebaseAuthCredentials.h"
 #include "FirebaseGoodiesLog.h"
@@ -9,11 +9,38 @@
 #include "Listener/FGIdTokenListener.h"
 #include "Listener/FGPhoneListener.h"
 
-static void HandleSignInCallback(const firebase::Future<firebase::auth::User*>& Callback)
+static void HandleSignInCallback(const firebase::Future<firebase::auth::AuthResult>& Result)
+{
+	if (Result.status() == firebase::FutureStatus::kFutureStatusComplete && Result.error() == 0)
+	{
+		const firebase::auth::User ResultUser = Result.result()->user;
+		const auto IosUser = MakeShareable(new DesktopFirebaseUser(ResultUser));
+
+		AsyncTask(ENamedThreads::GameThread, [=]()
+		{
+			UFGFirebaseUser* User = NewObject<UFGFirebaseUser>();
+			User->Init(IosUser);
+			UFGAuthLibrary::SignInSuccessCallback.ExecuteIfBound(User);
+		});
+	}
+	else
+	{
+		const FString ErrorMessage = FString(Result.error_message());
+		UE_LOG(LogFirebaseGoodies, Error, TEXT("Auth error: %s"), *ErrorMessage);
+
+		AsyncTask(ENamedThreads::GameThread, [=]()
+		{
+			UFGAuthLibrary::AuthErrorCallback.ExecuteIfBound(ErrorMessage);
+		});
+	}
+}
+
+static void HandleSignInCallbackUser(const firebase::Future<firebase::auth::User>& Callback)
 {
 	if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 	{
-		const auto IosUser = MakeShareable(new DesktopFirebaseUser(*Callback.result()));
+		const firebase::auth::User Result = *Callback.result();
+		const auto IosUser = MakeShareable(new DesktopFirebaseUser(Result));
 
 		AsyncTask(ENamedThreads::GameThread, [=]()
 		{
@@ -33,7 +60,6 @@ static void HandleSignInCallback(const firebase::Future<firebase::auth::User*>& 
 		});
 	}
 }
-
 void AuthLibraryDesktop::InitListeners(const FAuthVoidDelegate& IdTokenChangedDelegate, const FAuthVoidDelegate& AuthStateChangedDelegate)
 {
 	firebase::auth::Auth* Auth = firebase::auth::Auth::GetAuth(firebase::App::GetInstance());
@@ -45,7 +71,8 @@ void AuthLibraryDesktop::InitListeners(const FAuthVoidDelegate& IdTokenChangedDe
 TSharedPtr<IFirebaseUser> AuthLibraryDesktop::CurrentUser()
 {
 	firebase::auth::Auth* Auth = firebase::auth::Auth::GetAuth(firebase::App::GetInstance());
-	return MakeShareable(new DesktopFirebaseUser(Auth->current_user()));
+	firebase::auth::User User = Auth->current_user();
+	return MakeShareable(new DesktopFirebaseUser(User));
 }
 
 void AuthLibraryDesktop::CreateUser(const FString& Email, const FString& Password, const FAuthUserDelegate& OnSuccess, const FAuthStringDelegate& OnError)
@@ -53,11 +80,12 @@ void AuthLibraryDesktop::CreateUser(const FString& Email, const FString& Passwor
 	firebase::auth::Auth* Auth = firebase::auth::Auth::GetAuth(firebase::App::GetInstance());
 
 	const auto Task = Auth->CreateUserWithEmailAndPassword(TCHAR_TO_ANSI(*Email), TCHAR_TO_ANSI(*Password));
-	Task.AddOnCompletion([=](const ::firebase::Future<firebase::auth::User*>& Callback)
+	Task.AddOnCompletion([=](const firebase::Future<firebase::auth::AuthResult>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
-			const auto IosUser = MakeShareable(new DesktopFirebaseUser(*Callback.result()));
+			firebase::auth::User ResultUser = Callback.result()->user;
+			const auto IosUser = MakeShareable(new DesktopFirebaseUser(ResultUser));
 
 			AsyncTask(ENamedThreads::GameThread, [=]()
 			{
@@ -84,7 +112,7 @@ void AuthLibraryDesktop::FetchProvidersForEmail(const FString& Email, const FSig
 	firebase::auth::Auth* Auth = firebase::auth::Auth::GetAuth(firebase::App::GetInstance());
 
 	const auto Task = Auth->FetchProvidersForEmail(TCHAR_TO_ANSI(*Email));
-	Task.AddOnCompletion([=](const ::firebase::Future<firebase::auth::Auth::FetchProvidersResult>& Callback)
+	Task.AddOnCompletion([=](const firebase::Future<firebase::auth::Auth::FetchProvidersResult>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
@@ -118,7 +146,7 @@ void AuthLibraryDesktop::SendPasswordReset(const FString& Email, const FAuthVoid
 	firebase::auth::Auth* Auth = firebase::auth::Auth::GetAuth(firebase::App::GetInstance());
 
 	const auto Task = Auth->SendPasswordResetEmail(TCHAR_TO_ANSI(*Email));
-	Task.AddOnCompletion([=](const ::firebase::Future<void>& Callback)
+	Task.AddOnCompletion([=](const firebase::Future<void>& Callback)
 	{
 		if (Callback.status() == firebase::FutureStatus::kFutureStatusComplete && Callback.error() == 0)
 		{
@@ -162,7 +190,7 @@ void AuthLibraryDesktop::SignInWithCredentials(TSharedPtr<IFirebaseAuthCredentia
 {
 	firebase::auth::Auth* Auth = firebase::auth::Auth::GetAuth(firebase::App::GetInstance());
 	const auto DesktopCredentials = StaticCastSharedPtr<DesktopFirebaseAuthCredentials>(Credentials);
-	Auth->SignInWithCredential(DesktopCredentials->GetDesktopCredential()).AddOnCompletion(HandleSignInCallback);
+	Auth->SignInWithCredential(DesktopCredentials->GetDesktopCredential()).AddOnCompletion(HandleSignInCallbackUser);
 }
 
 void AuthLibraryDesktop::SignOut()
@@ -226,7 +254,7 @@ TSharedPtr<IFirebaseAuthCredentials> AuthLibraryDesktop::GetTwitterCredentials(c
 TSharedPtr<IFirebaseAuthCredentials> AuthLibraryDesktop::GetPhoneCredentials(const FString& VerificationId, const FString& VerificationCode)
 {
 	firebase::auth::Auth* Auth = firebase::auth::Auth::GetAuth(firebase::App::GetInstance());
-	const firebase::auth::Credential Credential = firebase::auth::PhoneAuthProvider::GetInstance(Auth).GetCredential(TCHAR_TO_ANSI(*VerificationId), TCHAR_TO_ANSI(*VerificationCode));
+	const firebase::auth::PhoneAuthCredential Credential = firebase::auth::PhoneAuthProvider::GetInstance(Auth).GetCredential(TCHAR_TO_ANSI(*VerificationId), TCHAR_TO_ANSI(*VerificationCode));
 	return MakeShareable(new DesktopFirebaseAuthCredentials(Credential));
 }
 
@@ -240,7 +268,12 @@ void AuthLibraryDesktop::VerifyPhoneNumber(const FString& Number, int TimeoutMil
 void AuthLibraryDesktop::PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSuccess, const FAuthStringDelegate& OnError)
 {
 	// TODO not available on desktop
+	OnError.ExecuteIfBound("Not available on desktop");
 }
 
+void AuthLibraryDesktop::SendSignInLinkToEmail(const FString& Email, FActionCodeSettings Settings, const FAuthVoidDelegate& OnSuccess, const FAuthStringDelegate& OnError)
+{
+	OnError.ExecuteIfBound("Not available on desktop");
+}
 
 #endif

@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "HAL/Platform.h"
+
 #if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 #include "firebase/auth.h"
 
@@ -10,14 +12,14 @@
 
 #include "Async/Async.h"
 
-class FGPhoneListener : public firebase::auth::PhoneAuthProvider::Listener
+class FGPhoneListener final : public firebase::auth::PhoneAuthProvider::Listener
 {
 public:
-	~FGPhoneListener() override
+	virtual ~FGPhoneListener() override
 	{
 	}
 
-	void OnVerificationCompleted(firebase::auth::Credential credential) override
+	virtual void OnVerificationCompleted(firebase::auth::PhoneAuthCredential credential) override
 	{
 		UE_LOG(LogFirebaseGoodies, Verbose, TEXT("Verify phone number OnVerificationCompleted"));
 		const auto Credentials = MakeShareable(new DesktopFirebaseAuthCredentials(credential));
@@ -30,9 +32,22 @@ public:
 		});
 	}
 
-	void OnVerificationFailed(const std::string& error) override
+	virtual void OnVerificationCompleted(firebase::auth::Credential credential) override
 	{
-		FString ErrorMessage = error.c_str();
+		UE_LOG(LogFirebaseGoodies, Verbose, TEXT("Verify phone number OnVerificationCompleted"));
+		const auto Credentials = MakeShareable(new DesktopFirebaseAuthCredentials(credential));
+
+		AsyncTask(ENamedThreads::GameThread, [=]()
+		{
+			UFGAuthCredentials* Result = NewObject<UFGAuthCredentials>();
+			Result->Init(Credentials);
+			UFGAuthLibrary::PhoneVerificationSuccessCallback.ExecuteIfBound(Result);
+		});
+	}
+
+	virtual void OnVerificationFailed(const std::string& error) override
+	{
+		const FString ErrorMessage = error.c_str();
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Verify phone number error: %s"), *ErrorMessage);
 
 		AsyncTask(ENamedThreads::GameThread, [=]()
@@ -41,25 +56,25 @@ public:
 		});
 	}
 
-	void OnCodeSent(const std::string& verification_id,
-	                const firebase::auth::PhoneAuthProvider::ForceResendingToken&
-	                force_resending_token) override
+	virtual void OnCodeSent(const std::string& verification_id,
+	                        const firebase::auth::PhoneAuthProvider::ForceResendingToken&
+	                        force_resending_token) override
 	{
 		UE_LOG(LogFirebaseGoodies, Verbose, TEXT("Verify phone number OnCodeSent"));
-		FString verificationIDString = verification_id.c_str();
+		const FString VerificationIDString = verification_id.c_str();
 		AsyncTask(ENamedThreads::GameThread, [=]()
 		{
-			UFGAuthLibrary::PhoneVerificationSentCallback.ExecuteIfBound(verificationIDString);
+			UFGAuthLibrary::PhoneVerificationSentCallback.ExecuteIfBound(VerificationIDString);
 		});
 	}
 
-	void OnCodeAutoRetrievalTimeOut(const std::string& verification_id) override
+	virtual void OnCodeAutoRetrievalTimeOut(const std::string& verification_id) override
 	{
 		UE_LOG(LogFirebaseGoodies, Verbose, TEXT("Verify phone number OnCodeAutoRetrievalTimeOut"));
-		FString verificationIDString = verification_id.c_str();
+		const FString VerificationIDString = verification_id.c_str();
 		AsyncTask(ENamedThreads::GameThread, [=]()
 		{
-			UFGAuthLibrary::PhoneVerificationTimeoutCallback.ExecuteIfBound(verificationIDString);
+			UFGAuthLibrary::PhoneVerificationTimeoutCallback.ExecuteIfBound(VerificationIDString);
 		});
 	}
 };

@@ -389,7 +389,7 @@ UFGListenerRegistration* UFGDocumentReference::AddSnapshotListener(const FFirest
 			[error retain];
 		}
 
-		AsyncTask(ENamedThreads::GameThread, [=]() {
+		AsyncTask(ENamedThreads::GameThread, [this, error, snapshot]() {
 			if (error == nil) {
 				UFGDocumentSnapshot* Snapshot = NewObject<UFGDocumentSnapshot>();
 				Snapshot->Init(snapshot);

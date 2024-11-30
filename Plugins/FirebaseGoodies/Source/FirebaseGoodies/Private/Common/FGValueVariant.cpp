@@ -2,12 +2,6 @@
 
 #include "Common/FGValueVariant.h"
 
-template<typename T>
-T FFGValueVariant::GetValue() const
-{
-	return Value.GetValue<T>();
-}
-
 template int32 FFGValueVariant::GetValue<int32>() const;
 template float FFGValueVariant::GetValue<float>() const;
 template bool FFGValueVariant::GetValue<bool>() const;

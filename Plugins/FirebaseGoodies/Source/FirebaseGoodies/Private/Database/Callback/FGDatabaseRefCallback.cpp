@@ -33,7 +33,10 @@ void UFGDatabaseRefCallback::ExecuteDataChanged(UFGDataSnapshot* Data)
 	AsyncTask(ENamedThreads::GameThread, [this, Data]() {
 		OnDataChangedDelegate.ExecuteIfBound(Data);
 	});
-	this->RemoveFromRoot();
+	if (AutoRemoveAfterExecution)
+	{
+		this->RemoveFromRoot();
+	}
 }
 
 void UFGDatabaseRefCallback::ExecuteCancel(int ErrorCode, const FString& ErrorMessage)
@@ -41,7 +44,10 @@ void UFGDatabaseRefCallback::ExecuteCancel(int ErrorCode, const FString& ErrorMe
 	AsyncTask(ENamedThreads::GameThread, [this, ErrorCode, ErrorMessage]() {
 		OnCancelledDelegate.ExecuteIfBound(ErrorCode, ErrorMessage);
 	});
-	this->RemoveFromRoot();
+	if (AutoRemoveAfterExecution)
+	{
+		this->RemoveFromRoot();
+	}
 }
 
 void UFGDatabaseRefCallback::ExecuteOnChildEvent(EChileEventType EventType, UFGDataSnapshot* Data, const FString& PreviousChildName)
@@ -49,5 +55,8 @@ void UFGDatabaseRefCallback::ExecuteOnChildEvent(EChileEventType EventType, UFGD
 	AsyncTask(ENamedThreads::GameThread, [this, EventType, Data, PreviousChildName]() {
 		OnChildEventDelegate.ExecuteIfBound(EventType, Data, PreviousChildName);
 	});
-	this->RemoveFromRoot();
+	if (AutoRemoveAfterExecution)
+	{
+		this->RemoveFromRoot();
+	}
 }

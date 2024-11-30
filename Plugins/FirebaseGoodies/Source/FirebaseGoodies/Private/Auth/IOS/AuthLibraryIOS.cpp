@@ -2,7 +2,8 @@
 
 #import "IOS/IOSAppDelegate.h"
 
-#import <FirebaseAuth/FirebaseAuth.h>
+#import <FirebaseAuthInterop/FIRAuthInterop.h>
+#import <FirebaseAuth/FirebaseAuth-Swift.h>
 #import <GoogleSignIn/GoogleSignIn.h>
 #include <objc/objc.h>
 
@@ -214,14 +215,13 @@ void AuthLibraryIOS::VerifyPhoneNumber(const FString& Number, int TimeoutMillis,
 }
 
 void AuthLibraryIOS::PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSuccess, const FAuthStringDelegate& OnError) {
-  const UFirebaseGoodiesSettings* Settings = FFirebaseGoodiesModule::Get().GetSettings();
-  GIDConfiguration* config = [[GIDConfiguration alloc] initWithClientID:Settings->ClientId.GetNSString()];
-  [GIDSignIn.sharedInstance signInWithConfiguration:config
-						   presentingViewController:[IOSAppDelegate GetDelegate].IOSController
-										   callback:^(GIDGoogleUser* _Nullable user, NSError* _Nullable error) {
+	const UFirebaseGoodiesSettings* Settings = FFirebaseGoodiesModule::Get().GetSettings();
+	GIDConfiguration* config = [[GIDConfiguration alloc] initWithClientID:Settings->ClientId.GetNSString()];
+	[GIDSignIn.sharedInstance setConfiguration:config];
+	[GIDSignIn.sharedInstance signInWithPresentingViewController:[IOSAppDelegate GetDelegate].IOSController
+      completion:^(GIDSignInResult * _Nullable result, NSError * _Nullable error) {
 											 if (error == nil) {
-											   GIDAuthentication* authentication = user.authentication;
-											   FIRAuthCredential* credential = [FIRGoogleAuthProvider credentialWithIDToken:authentication.idToken accessToken:authentication.accessToken];
+											 	FIRAuthCredential *credential = [FIRGoogleAuthProvider credentialWithIDToken:result.user.idToken.tokenString accessToken:result.user.accessToken.tokenString];
 											 	auto IosCredentials = MakeShareable(new IOSFirebaseAuthCredentials(credential));
 											   AsyncTask(ENamedThreads::GameThread, [=]()
 											   {
@@ -235,4 +235,16 @@ void AuthLibraryIOS::PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSucces
 											   AsyncTask(ENamedThreads::GameThread, [=]() { UFGAuthLibrary::AuthErrorCallback.ExecuteIfBound(ErrorMessage); });
 											 }
 										   }];
+}
+
+void AuthLibraryIOS::SendSignInLinkToEmail(const FString& Email, FActionCodeSettings Settings, const FAuthVoidDelegate& OnSuccess, const FAuthStringDelegate& OnError)
+{
+    [[FIRAuth auth] sendPasswordResetWithEmail:Email.GetNSString() completion:^(NSError*_Nullable error) {
+      if (error) {
+        FString ErrorMessage = FString(error.localizedDescription);
+        AsyncTask(ENamedThreads::GameThread, [=]() { UFGAuthLibrary::SendSignInLinkErrorCallback.ExecuteIfBound(ErrorMessage); });
+      } else {
+        AsyncTask(ENamedThreads::GameThread, [=]() { UFGAuthLibrary::SendSignInLinkSuccessCallback.ExecuteIfBound(); });
+      }
+    }];
 }

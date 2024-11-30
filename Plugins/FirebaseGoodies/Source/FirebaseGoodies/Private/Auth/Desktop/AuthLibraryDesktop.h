@@ -1,5 +1,7 @@
 #pragma once
 
+#include "HAL/Platform.h"
+
 #if (PLATFORM_WINDOWS || PLATFORM_MAC) && FG_ENABLE_EDITOR_SUPPORT
 
 #include "Auth/Interface/IFirebaseAuthLibrary.h"
@@ -30,6 +32,7 @@ public:
 	virtual void VerifyPhoneNumber(const FString& Number, int TimeoutMillis, const FAuthCredentialsDelegate& OnSuccess, const FAuthStringDelegate& OnError, const FAuthStringDelegate& OnTimeout,
 	                               const FAuthStringDelegate& OnSmsSent) override;
 	virtual void PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSuccess, const FAuthStringDelegate& OnError) override;
+	virtual void SendSignInLinkToEmail(const FString& Email, FActionCodeSettings Settings, const FAuthVoidDelegate& OnSuccess, const FAuthStringDelegate& OnError) override;
 };
 
 #endif

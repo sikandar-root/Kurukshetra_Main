@@ -1,4 +1,4 @@
-// Copyright 2022 Google Inc. All Rights Reserved.
+// Copyright 2024 Google Inc. All Rights Reserved.
 
 #ifndef FIREBASE_ANALYTICS_CLIENT_CPP_INCLUDE_FIREBASE_ANALYTICS_EVENT_NAMES_H_
 #define FIREBASE_ANALYTICS_CLIENT_CPP_INCLUDE_FIREBASE_ANALYTICS_EVENT_NAMES_H_
@@ -52,7 +52,7 @@ static const char*const kEventAdImpression  =
 /// <ul>
 ///  <li>@c AnalyticsParameterCoupon (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterPaymentType (String) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
@@ -68,7 +68,7 @@ static const char*const kEventAddPaymentInfo  =
 /// <ul>
 ///  <li>@c AnalyticsParameterCoupon (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterShippingTier (String) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
@@ -84,7 +84,7 @@ static const char*const kEventAddShippingInfo  =
 ///
 /// <ul>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
 static const char*const kEventAddToCart  = "add_to_cart";
@@ -97,7 +97,7 @@ static const char*const kEventAddToCart  = "add_to_cart";
 ///
 /// <ul>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
 static const char*const kEventAddToWishlist  =
@@ -121,7 +121,7 @@ static const char*const kEventAppOpen  = "app_open";
 /// <ul>
 ///  <li>@c AnalyticsParameterCoupon (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
 static const char*const kEventBeginCheckout  =
@@ -237,8 +237,11 @@ static const char*const kEventPostScore  = "post_score";
 ///  <li>@c AnalyticsParameterAffiliation (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCoupon (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterEndDate (String) (optional)</li>
+///  <li>@c AnalyticsParameterItemID (String) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterShipping (Double) (optional)</li>
+///  <li>@c AnalyticsParameterStartDate (String) (optional)</li>
 ///  <li>@c AnalyticsParameterTax (Double) (optional)</li>
 ///  <li>@c AnalyticsParameterTransactionID (String) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
@@ -254,7 +257,7 @@ static const char*const kEventPurchase  = "purchase";
 ///  <li>@c AnalyticsParameterAffiliation (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCoupon (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterShipping (Double) (optional)</li>
 ///  <li>@c AnalyticsParameterTax (Double) (optional)</li>
 ///  <li>@c AnalyticsParameterTransactionID (String) (optional)</li>
@@ -270,7 +273,7 @@ static const char*const kEventRefund  = "refund";
 ///
 /// <ul>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
 static const char*const kEventRemoveFromCart  =
@@ -322,7 +325,7 @@ static const char*const kEventSelectContent  =
 /// Params:
 ///
 /// <ul>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterItemListID (String) (optional)</li>
 ///  <li>@c AnalyticsParameterItemListName (String) (optional)</li>
 /// </ul>
@@ -335,7 +338,7 @@ static const char*const kEventSelectItem  = "select_item";
 /// <ul>
 ///  <li>@c AnalyticsParameterCreativeName (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCreativeSlot (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterLocationID (String) (optional)</li>
 ///  <li>@c AnalyticsParameterPromotionID (String) (optional)</li>
 ///  <li>@c AnalyticsParameterPromotionName (String) (optional)</li>
@@ -407,7 +410,7 @@ static const char*const kEventUnlockAchievement  =
 ///
 /// <ul>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
 static const char*const kEventViewCart  = "view_cart";
@@ -421,7 +424,7 @@ static const char*const kEventViewCart  = "view_cart";
 ///
 /// <ul>
 ///  <li>@c AnalyticsParameterCurrency (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterValue (Double) (optional)</li>
 /// </ul>
 static const char*const kEventViewItem  = "view_item";
@@ -430,7 +433,7 @@ static const char*const kEventViewItem  = "view_item";
 /// or offerings. Params:
 ///
 /// <ul>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterItemListID (String) (optional)</li>
 ///  <li>@c AnalyticsParameterItemListName (String) (optional)</li>
 /// </ul>
@@ -445,7 +448,7 @@ static const char*const kEventViewItemList  =
 /// <ul>
 ///  <li>@c AnalyticsParameterCreativeName (String) (optional)</li>
 ///  <li>@c AnalyticsParameterCreativeSlot (String) (optional)</li>
-///  <li>@c AnalyticsParameterItems (Array<Dictionary<String, Any>>) (optional)</li>
+///  <li>@c AnalyticsParameterItems ([[String: Any]]) (optional)</li>
 ///  <li>@c AnalyticsParameterLocationID (String) (optional)</li>
 ///  <li>@c AnalyticsParameterPromotionID (String) (optional)</li>
 ///  <li>@c AnalyticsParameterPromotionName (String) (optional)</li>

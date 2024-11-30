@@ -44,18 +44,18 @@ FString UFGAnalyticsParameter::GetName()
 	return Name;
 }
 
-EParameterType UFGAnalyticsParameter::GetType()
+UFGAnalyticsParameterType UFGAnalyticsParameter::GetType()
 {
 	switch (Value.GetType())
 	{
 		case EVariantTypes::Int64:
-			return EParameterType::Integer;
+			return UFGAnalyticsParameterType::Integer;
 		case EVariantTypes::Float:
-			return EParameterType::Float;
+			return UFGAnalyticsParameterType::Float;
 		case EVariantTypes::String:
-			return EParameterType::String;
+			return UFGAnalyticsParameterType::String;
 		default:
-			return EParameterType::Undefined;
+			return UFGAnalyticsParameterType::Undefined;
 	}
 }
 

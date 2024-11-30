@@ -95,6 +95,7 @@ FString DatabaseRefAndroid::GetKey() const
 void DatabaseRefAndroid::GetValue(const FOnDataChangedDelegate& OnDataReceived, const FOnCancelledDelegate& OnCancelled)
 {
 	UFGDatabaseRefCallback* NativeCallback = NewObject<UFGDatabaseRefCallback>();
+	NativeCallback->AutoRemoveAfterExecution = true;
 	NativeCallback->BindDataChangedDelegate(OnDataReceived);
 	NativeCallback->BindCancelDelegate(OnCancelled);
 	
@@ -132,6 +133,7 @@ void DatabaseRefAndroid::AddValueListener(const FOnDataChangedDelegate& OnDataCh
 	UFGDatabaseRefCallback* NativeCallback = NewObject<UFGDatabaseRefCallback>();
 	NativeCallback->BindDataChangedDelegate(OnDataChanged);
 	NativeCallback->BindCancelDelegate(OnCancelled);
+	ValueListener = NativeCallback; 
 
 	DatabaseRefJObject->CallMethod<void>(AddValueListenerMethod, (jlong)NativeCallback);
 }
@@ -139,6 +141,11 @@ void DatabaseRefAndroid::AddValueListener(const FOnDataChangedDelegate& OnDataCh
 void DatabaseRefAndroid::RemoveValueListener()
 {
 	DatabaseRefJObject->CallMethod<void>(RemoveValueListenerMethod);
+	if (ValueListener)
+	{
+		ValueListener->RemoveFromRoot();
+		ValueListener = nullptr;
+	}
 }
 
 void DatabaseRefAndroid::AddChildListener(const FOnChildEventDelegate& OnChildEvent, const FOnCancelledDelegate& OnCancelled)
@@ -146,6 +153,7 @@ void DatabaseRefAndroid::AddChildListener(const FOnChildEventDelegate& OnChildEv
 	UFGDatabaseRefCallback* NativeCallback = NewObject<UFGDatabaseRefCallback>();
 	NativeCallback->BindOnChildEventDelegate(OnChildEvent);
 	NativeCallback->BindCancelDelegate(OnCancelled);
+	ChildListener = NativeCallback;
 
 	DatabaseRefJObject->CallMethod<void>(AddChildListenerMethod, (jlong)NativeCallback);
 }
@@ -153,6 +161,11 @@ void DatabaseRefAndroid::AddChildListener(const FOnChildEventDelegate& OnChildEv
 void DatabaseRefAndroid::RemoveChildListener()
 {
 	DatabaseRefJObject->CallMethod<void>(RemoveChildListenerMethod);
+	if (ChildListener)
+	{
+		ChildListener->RemoveFromRoot();
+		ChildListener = nullptr;
+	}
 }
 
 void DatabaseRefAndroid::KeepSynced(bool Sync)

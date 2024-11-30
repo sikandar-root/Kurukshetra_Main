@@ -18,7 +18,7 @@ UFGFirebaseUser::~UFGFirebaseUser()
 {
 }
 
-bool UFGFirebaseUser::IsAnonymous()
+bool UFGFirebaseUser::IsAnonymous() const
 {
 	if (!IsUserValid())
 	{
@@ -27,7 +27,6 @@ bool UFGFirebaseUser::IsAnonymous()
 
 	return UserImpl->IsAnonymous();
 }
-
 
 bool UFGFirebaseUser::IsEmailVerified() const
 {
@@ -41,7 +40,7 @@ bool UFGFirebaseUser::IsEmailVerified() const
 
 bool UFGFirebaseUser::IsUserValid() const
 {
-	const bool IsValid = UserImpl->IsUserValid();
+	const bool IsValid = UserImpl && UserImpl->IsUserValid();
 	if (!IsValid)
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("User is not valid."));
@@ -62,30 +61,30 @@ void UFGFirebaseUser::Delete(const FOnUserVoidTaskCompleted& OnSuccess, const FO
 	UserImpl->Delete(OnSuccess, OnError);
 }
 
-void UFGFirebaseUser::LinkWithCredentials(UFGAuthCredentials* credentials, const FOnUserUpdated& OnSuccess, const FOnUserOperationError& OnError)
+void UFGFirebaseUser::LinkWithCredentials(UFGAuthCredentials* Credentials, const FOnUserUpdated& OnSuccess, const FOnUserOperationError& OnError)
 {
 	OnUserUpdatedCallback = OnSuccess;
 	OnUserOperationErrorCallback = OnError;
 
-	if (!IsUserValid() || !credentials->AreValid())
+	if (!IsUserValid() || !Credentials->AreValid())
 	{
 		return;
 	}
 
-	UserImpl->LinkWithCredentials(credentials, OnSuccess, OnError);
+	UserImpl->LinkWithCredentials(Credentials, OnSuccess, OnError);
 }
 
-void UFGFirebaseUser::Reauthenticate(UFGAuthCredentials* credentials, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
+void UFGFirebaseUser::Reauthenticate(UFGAuthCredentials* Credentials, const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
 {
 	OnUserVoidTaskCompletedCallback = OnSuccess;
 	OnUserOperationErrorCallback = OnError;
 
-	if (!IsUserValid() || !credentials->AreValid())
+	if (!IsUserValid() || !Credentials->AreValid())
 	{
 		return;
 	}
 
-	UserImpl->Reauthenticate(credentials, OnSuccess, OnError);
+	UserImpl->Reauthenticate(Credentials, OnSuccess, OnError);
 }
 
 void UFGFirebaseUser::Reload(const FOnUserVoidTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
@@ -119,6 +118,12 @@ void UFGFirebaseUser::UnlinkProvider(const FString& Provider, const FOnUserUpdat
 	OnUserUpdatedCallback = OnSuccess;
 	OnUserOperationErrorCallback = OnError;
 
+	if (Provider.IsEmpty())
+	{
+		OnError.ExecuteIfBound("-1", "Provider empty");
+		return;
+	}
+	
 	if (!IsUserValid())
 	{
 		return;
@@ -132,6 +137,12 @@ void UFGFirebaseUser::UpdateEmail(const FString& Email, const FOnUserVoidTaskCom
 	OnUserVoidTaskCompletedCallback = OnSuccess;
 	OnUserOperationErrorCallback = OnError;
 
+	if (Email.IsEmpty())
+	{
+		OnError.ExecuteIfBound("-1", "Email empty");
+		return;
+	}
+
 	if (!IsUserValid())
 	{
 		return;
@@ -144,6 +155,12 @@ void UFGFirebaseUser::UpdatePassword(const FString& Password, const FOnUserVoidT
 {
 	OnUserVoidTaskCompletedCallback = OnSuccess;
 	OnUserOperationErrorCallback = OnError;
+
+	if (Password.IsEmpty())
+	{
+		OnError.ExecuteIfBound("-1", "Password empty");
+		return;
+	}
 
 	if (!IsUserValid())
 	{
@@ -167,7 +184,7 @@ void UFGFirebaseUser::UpdatePhoneNumber(UFGAuthCredentials* Credentials, const F
 	UserImpl->UpdatePhoneNumber(Credentials, OnSuccess, OnError);
 }
 
-void UFGFirebaseUser::UpdateProfile(const FString& displayName, const FString& avatarUrl, const FOnUserVoidTaskCompleted& OnSuccess,
+void UFGFirebaseUser::UpdateProfile(const FString& DisplayName, const FString& AvatarUrl, const FOnUserVoidTaskCompleted& OnSuccess,
                                     const FOnUserOperationError& OnError)
 {
 	OnUserVoidTaskCompletedCallback = OnSuccess;
@@ -178,7 +195,7 @@ void UFGFirebaseUser::UpdateProfile(const FString& displayName, const FString& a
 		return;
 	}
 
-	UserImpl->UpdateProfile(displayName, avatarUrl, OnSuccess, OnError);
+	UserImpl->UpdateProfile(DisplayName, AvatarUrl, OnSuccess, OnError);
 }
 
 void UFGFirebaseUser::GetToken(bool ForceRefresh, const FOnUserStringTaskCompleted& OnSuccess, const FOnUserOperationError& OnError)
@@ -194,7 +211,7 @@ void UFGFirebaseUser::GetToken(bool ForceRefresh, const FOnUserStringTaskComplet
 	UserImpl->GetToken(ForceRefresh, OnSuccess, OnError);
 }
 
-TArray<UFGFirebaseUserInfo*> UFGFirebaseUser::GetProviderData()
+TArray<UFGFirebaseUserInfo*> UFGFirebaseUser::GetProviderData() const
 {
 	TArray<UFGFirebaseUserInfo*> Result;
 
@@ -221,7 +238,7 @@ void UFGFirebaseUser::GetIdToken(bool ForceRefresh, const FOnGetTokenResultCompl
 	UserImpl->GetIdToken(ForceRefresh, OnSuccess, OnError);
 }
 
-void UFGFirebaseUser::Init(const TSharedPtr<IFirebaseUser> User)
+void UFGFirebaseUser::Init(const TSharedPtr<IFirebaseUser>& User)
 {
 	UserImpl = User;
 	UserInfoImpl = User;

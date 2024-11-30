@@ -8,16 +8,16 @@
 
 struct FFGValueVariant;
 
-template<>
+template <>
 struct TVariantTraits<TArray<FFGValueVariant>>
 {
-	static CONSTEXPR EVariantTypes GetType() { return EVariantTypes::Custom; }
+	static constexpr EVariantTypes GetType() { return EVariantTypes::Custom; }
 };
 
-template<>
+template <>
 struct TVariantTraits<TMap<FString, FFGValueVariant>>
 {
-	static CONSTEXPR EVariantTypes GetType() { return EVariantTypes::Custom; }
+	static constexpr EVariantTypes GetType() { return EVariantTypes::Custom; }
 };
 
 UENUM(BlueprintType)
@@ -42,8 +42,11 @@ struct FFGValueVariant
 {
 	GENERATED_BODY()
 
-	template<typename T>
-	T GetValue() const;
+	template <typename T>
+	T GetValue() const
+	{
+		return Value.GetValue<T>();
+	}
 
 	UPROPERTY(BlueprintReadOnly, Category = "Firebase Goodies|Value Variant")
 	EValueType Type = EValueType::Null;

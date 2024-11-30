@@ -37,4 +37,5 @@ public:
 	                               const FAuthStringDelegate& OnError, const FAuthStringDelegate& OnTimeout,
 	                               const FAuthStringDelegate& OnSmsSent) = 0;
 	virtual void PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSuccess, const FAuthStringDelegate& OnError) = 0;
+	virtual void SendSignInLinkToEmail(const FString& Email, FActionCodeSettings Settings, const FAuthVoidDelegate& OnSuccess, const FAuthStringDelegate& OnError) = 0;
 };

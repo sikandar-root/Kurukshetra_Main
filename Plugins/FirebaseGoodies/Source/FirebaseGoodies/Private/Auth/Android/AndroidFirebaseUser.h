@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Auth/Interface/IFirebaseUser.h"
 
 #include "Android/AndroidJNI.h"

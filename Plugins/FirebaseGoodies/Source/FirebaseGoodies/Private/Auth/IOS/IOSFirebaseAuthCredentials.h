@@ -1,7 +1,8 @@
 #pragma once
 #include "Auth/Interface/IFirebaseAuthCredentials.h"
 
-#import <FirebaseAuth/FirebaseAuth.h>
+#import <FirebaseAuthInterop/FIRAuthInterop.h>
+#import <FirebaseAuth/FirebaseAuth-Swift.h>
 
 class IOSFirebaseAuthCredentials : public IFirebaseAuthCredentials
 {

@@ -51,6 +51,9 @@ FAuthCredentialsDelegate UFGAuthLibrary::SignInWithGoogleSuccessCallback;
 FAuthCredentialsDelegate UFGAuthLibrary::GetGameCenterCredentialsSuccessDelegate;
 FAuthStringDelegate UFGAuthLibrary::GetGameCenterCredentialsErrorDelegate;
 
+FAuthVoidDelegate UFGAuthLibrary::SendSignInLinkSuccessCallback;
+FAuthStringDelegate UFGAuthLibrary::SendSignInLinkErrorCallback;
+
 void UFGAuthLibrary::InitListeners(const FAuthVoidDelegate& IdTokenChangedDelegate, const FAuthVoidDelegate& AuthStateChangedDelegate)
 {
 	IdTokenChangedCallback = IdTokenChangedDelegate;
@@ -65,13 +68,13 @@ void UFGAuthLibrary::InitListeners(const FAuthVoidDelegate& IdTokenChangedDelega
 
 UFGFirebaseUser* UFGAuthLibrary::CurrentUser()
 {
-	const TSharedPtr<IFirebaseUser> FirebaseUser = AuthLibraryImpl->CurrentUser();
-
 	UFGFirebaseUser* User = NewObject<UFGFirebaseUser>();
 	if (!AuthLibraryImpl)
 	{
 		return User;
 	}
+
+	const TSharedPtr<IFirebaseUser> FirebaseUser = AuthLibraryImpl->CurrentUser();
 	User->Init(FirebaseUser);
 	return User;
 }
@@ -81,6 +84,12 @@ void UFGAuthLibrary::CreateUser(const FString& Email, const FString& Password, c
 {
 	UserCreateSuccessCallback = OnSuccess;
 	AuthErrorCallback = OnError;
+
+	if (Email.IsEmpty() || Password.IsEmpty())
+	{
+		OnError.ExecuteIfBound("Email or Password can't be empty");
+		return;
+	}
 
 	if (!AuthLibraryImpl)
 	{
@@ -109,6 +118,12 @@ void UFGAuthLibrary::SendPasswordReset(const FString& Email, const FAuthVoidDele
 	PasswordResetSuccessCallback = OnSuccess;
 	AuthErrorCallback = OnError;
 
+	if (Email.IsEmpty())
+	{
+		OnError.ExecuteIfBound("Email can't be empty");
+		return;
+	}
+
 	if (!AuthLibraryImpl)
 	{
 		return;
@@ -128,6 +143,12 @@ void UFGAuthLibrary::SignInWithEmailAndPassword(const FString& Email, const FStr
 		return;
 	}
 
+	if (Email.IsEmpty() || Password.IsEmpty())
+	{
+		OnError.ExecuteIfBound("Email or password missing");
+		return;
+	}
+
 	AuthLibraryImpl->SignInWithEmailAndPassword(Email, Password, OnSuccess, OnError);
 }
 
@@ -135,6 +156,12 @@ void UFGAuthLibrary::SignInWithToken(const FString& Token, const FAuthUserDelega
 {
 	SignInSuccessCallback = OnSuccess;
 	AuthErrorCallback = OnError;
+
+	if (Token.IsEmpty())
+	{
+		OnError.ExecuteIfBound("Token can't be empty");
+		return;
+	}
 
 	if (!AuthLibraryImpl)
 	{
@@ -164,6 +191,7 @@ void UFGAuthLibrary::SignInWithCredentials(UFGAuthCredentials* Credentials, cons
 
 	if (!Credentials->AreValid())
 	{
+		UE_LOG(LogFirebaseGoodies, Error, TEXT("Invalid Credentials"));
 		return;
 	}
 
@@ -187,13 +215,13 @@ void UFGAuthLibrary::SignOut()
 
 UFGAuthCredentials* UFGAuthLibrary::GetEmailCredentials(const FString& Email, const FString& Password)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (Email.IsEmpty() || Password.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check email & password!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -203,13 +231,13 @@ UFGAuthCredentials* UFGAuthLibrary::GetEmailCredentials(const FString& Email, co
 
 UFGAuthCredentials* UFGAuthLibrary::GetFacebookCredentials(const FString& Token)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (Token.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check token!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -219,13 +247,13 @@ UFGAuthCredentials* UFGAuthLibrary::GetFacebookCredentials(const FString& Token)
 
 UFGAuthCredentials* UFGAuthLibrary::GetGithubCredentials(const FString& Token)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (Token.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check token!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -235,13 +263,13 @@ UFGAuthCredentials* UFGAuthLibrary::GetGithubCredentials(const FString& Token)
 
 UFGAuthCredentials* UFGAuthLibrary::GetGoogleCredentials(const FString& IdToken, const FString& AccessToken)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (IdToken.IsEmpty() || AccessToken.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check tokens!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -251,13 +279,13 @@ UFGAuthCredentials* UFGAuthLibrary::GetGoogleCredentials(const FString& IdToken,
 
 UFGAuthCredentials* UFGAuthLibrary::GetAppleCredentials(const FString& IdToken, const FString& RawNonce)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (IdToken.IsEmpty() || RawNonce.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check token or nonce!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -280,13 +308,13 @@ void UFGAuthLibrary::GetGameCenterCredentials(const FAuthCredentialsDelegate& On
 
 UFGAuthCredentials* UFGAuthLibrary::GetGenericOAuthCredentials(const FString& Provider, const FString& IdToken, const FString& AccessToken)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (Provider.IsEmpty() || IdToken.IsEmpty() || AccessToken.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check provider and tokens!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -296,13 +324,13 @@ UFGAuthCredentials* UFGAuthLibrary::GetGenericOAuthCredentials(const FString& Pr
 
 UFGAuthCredentials* UFGAuthLibrary::GetPlayGamesCredentials(const FString& ServerAuthCode)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (ServerAuthCode.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check server authorization code!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -312,13 +340,13 @@ UFGAuthCredentials* UFGAuthLibrary::GetPlayGamesCredentials(const FString& Serve
 
 UFGAuthCredentials* UFGAuthLibrary::GetTwitterCredentials(const FString& Token, const FString& Secret)
 {
+	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (Token.IsEmpty() || Secret.IsEmpty())
 	{
 		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty string! \n Check token and secret!"));
-		return nullptr;
+		return Credentials;
 	}
 
-	UFGAuthCredentials* Credentials = NewObject<UFGAuthCredentials>();
 	if (!AuthLibraryImpl)
 		return Credentials;
 
@@ -338,7 +366,7 @@ UFGAuthCredentials* UFGAuthLibrary::GetPhoneCredentials(const FString& Verificat
 	if (!AuthLibraryImpl)
 		return Credentials;
 
-	Credentials->Init(AuthLibraryImpl->GetTwitterCredentials(VerificationId, VerificationCode));
+	Credentials->Init(AuthLibraryImpl->GetPhoneCredentials(VerificationId, VerificationCode));
 	return Credentials;
 }
 
@@ -377,4 +405,23 @@ void UFGAuthLibrary::PromptGoogleSignIn(const FAuthCredentialsDelegate& OnSucces
 	}
 
 	AuthLibraryImpl->PromptGoogleSignIn(OnSuccess, OnError);
+}
+
+void UFGAuthLibrary::SendSignInLinkToEmail(const FString& Email, FActionCodeSettings Settings, const FAuthVoidDelegate& OnSuccess, const FAuthStringDelegate& OnError)
+{
+	if (Email.IsEmpty())
+	{
+		UE_LOG(LogFirebaseGoodies, Error, TEXT("Empty email! \n Check Email!"));
+		return;
+	}
+
+	SendSignInLinkSuccessCallback = OnSuccess;
+	SendSignInLinkErrorCallback= OnError;
+
+	if (!AuthLibraryImpl)
+	{
+		return;
+	}
+
+	AuthLibraryImpl->SendSignInLinkToEmail(Email, Settings, OnSuccess, OnError);
 }

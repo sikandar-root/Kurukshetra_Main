@@ -35,6 +35,13 @@ void DatabaseRefIOS::SetValue(const FFGValueVariant& Value, const FFGValueVarian
 	id ValueObject = ValueVariantUtils::VariantToId(Value);
 	id PriorityObject = ValueVariantUtils::VariantToId(Priority);
 
+	if (Value.Type == EValueType::Timestamp)
+	{
+		// TODO: other type checks?
+		UE_LOG(LogFirebaseGoodies, Error, TEXT("Cannot store object of type timestamp. Can only store objects of type Number, String, Map, and Array."));
+		return;
+	} 
+
 	[DbRef setValue:ValueObject andPriority:PriorityObject];
 }
 
@@ -53,6 +60,7 @@ FString DatabaseRefIOS::GetKey() const {
 
 void DatabaseRefIOS::GetValue(const FOnDataChangedDelegate& OnDataReceived, const FOnCancelledDelegate& OnCancelled) {
 	UFGDatabaseRefCallback* NativeCallback = NewObject<UFGDatabaseRefCallback>();
+	NativeCallback->AutoRemoveAfterExecution = true;
 	NativeCallback->BindDataChangedDelegate(OnDataReceived);
 	NativeCallback->BindCancelDelegate(OnCancelled);
 
@@ -60,7 +68,6 @@ void DatabaseRefIOS::GetValue(const FOnDataChangedDelegate& OnDataReceived, cons
 	typedef void (^TErrorBlock)(NSError* _Nonnull);
 
 	TCallbackBlock CallbackBlock = ^(FIRDataSnapshot* _Nonnull Snapshot) {
-	  FOnDataChangedDelegate DataChangedDelegate = OnDataReceived;
 	  DataSnapshotIOS* snapshotPtr = new DataSnapshotIOS(Snapshot);
 	  AsyncTask(ENamedThreads::GameThread, [=]() {
 		  UFGDataSnapshot* Data = NewObject<UFGDataSnapshot>();
@@ -69,7 +76,6 @@ void DatabaseRefIOS::GetValue(const FOnDataChangedDelegate& OnDataReceived, cons
 	  });
 	};
 	TErrorBlock ErrorBlock = ^(NSError* _Nonnull Error) {
-	  FOnCancelledDelegate CancelDelegate = OnCancelled;
 	  const FString ErrorMessage([Error localizedDescription]);
 	  int ErrorCode = [Error code];
 
@@ -103,12 +109,12 @@ void DatabaseRefIOS::AddValueListener(const FOnDataChangedDelegate& OnDataChange
 	UFGDatabaseRefCallback* NativeCallback = NewObject<UFGDatabaseRefCallback>();
 	NativeCallback->BindDataChangedDelegate(OnDataChanged);
 	NativeCallback->BindCancelDelegate(OnCancelled);
+	ValueListener = NativeCallback;
 
 	typedef void (^TCallbackBlock)(FIRDataSnapshot* _Nonnull);
 	typedef void (^TErrorBlock)(NSError* _Nonnull);
 
 	TCallbackBlock CallbackBlock = ^(FIRDataSnapshot* _Nonnull Snapshot) {
-	  FOnDataChangedDelegate DataChangedDelegate = OnDataChanged;
 	  DataSnapshotIOS* snapshotPtr = new DataSnapshotIOS(Snapshot);
 	  AsyncTask(ENamedThreads::GameThread, [=]() {
 		  UFGDataSnapshot* Data = NewObject<UFGDataSnapshot>();
@@ -117,7 +123,6 @@ void DatabaseRefIOS::AddValueListener(const FOnDataChangedDelegate& OnDataChange
 	  });
 	};
 	TErrorBlock ErrorBlock = ^(NSError* _Nonnull Error) {
-	  FOnCancelledDelegate CancelDelegate = OnCancelled;
 	  const FString ErrorMessage([Error localizedDescription]);
 	  int ErrorCode = [Error code];
 
@@ -136,12 +141,19 @@ void DatabaseRefIOS::RemoveValueListener() {
 		[Query removeObserverWithHandle:ValueChangedEventHandle];
 		ValueChangedEventHandle = 0;
 	}
+	
+	if (ValueListener)
+	{
+		ValueListener->RemoveFromRoot();
+		ValueListener = nullptr;
+	}
 }
 
 void DatabaseRefIOS::AddChildListener(const FOnChildEventDelegate& OnChildEvent, const FOnCancelledDelegate& OnCancelled) {
 	UFGDatabaseRefCallback* NativeCallback = NewObject<UFGDatabaseRefCallback>();
 	NativeCallback->BindOnChildEventDelegate(OnChildEvent);
 	NativeCallback->BindCancelDelegate(OnCancelled);
+	ChildListener = NativeCallback;
 
 	typedef void (^TCallbackBlock)(FIRDataSnapshot* _Nonnull, NSString* _Nullable);
 	typedef void (^TErrorBlock)(NSError* _Nonnull);
@@ -221,6 +233,12 @@ void DatabaseRefIOS::RemoveChildListener() {
 	ChildChangedEventHandle = 0;
 	ChildRemovedEventHandle = 0;
 	ChildMovedEventHandle = 0;
+
+	if (ChildListener)
+	{
+		ChildListener->RemoveFromRoot();
+		ChildListener = nullptr;
+	}
 }
 
 void DatabaseRefIOS::KeepSynced(bool Sync) {
@@ -442,10 +460,10 @@ void DatabaseRefIOS::RunTransaction() {
 		}
 		andCompletionBlock:^(NSError* _Nullable Error, BOOL Commited, FIRDataSnapshot* _Nullable Snapshot) {
 		  if (Commited) {
-			  AsyncTask(ENamedThreads::GameThread, [=]() { TransactionTask->Complete.Broadcast(TEXT("")); });
+			  AsyncTask(ENamedThreads::GameThread, [this]() { TransactionTask->Complete.Broadcast(TEXT("")); });
 		  } else {
 			  const FString ErrorMessage([Error localizedDescription]);
-			  AsyncTask(ENamedThreads::GameThread, [=]() { TransactionTask->Abort.Broadcast(ErrorMessage); });
+			  AsyncTask(ENamedThreads::GameThread, [this, ErrorMessage]() { TransactionTask->Abort.Broadcast(ErrorMessage); });
 		  }
 		}];
 }
