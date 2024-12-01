@@ -8,9 +8,10 @@
 
 
 
-USetValue_Async* USetValue_Async::SetValueWithResponce(UFGDatabaseRef* DatabaseRef, const FFGValueVariant& Value,
-	const FFGValueVariant& Priority)
+USetValue_Async* USetValue_Async::SetValueWithResponce(UFGDatabaseRef* DatabaseRef, const FFGValueVariant& Value
+	)
 {
+	const FFGValueVariant  Priority;
 	// Create a new instance of the async action
 	USetValue_Async* AsyncAction = NewObject<USetValue_Async>();
     

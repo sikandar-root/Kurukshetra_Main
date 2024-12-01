@@ -39,7 +39,7 @@ public:
 	// This function will be called to start the async task
 	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
 	static USetValue_Async* SetValueWithResponce(UFGDatabaseRef* DatabaseRef,
-		const FFGValueVariant& Value, const FFGValueVariant& Priority );
+		const FFGValueVariant& Value );
 
 	// Function to activate the async task
 	virtual void Activate() override;
