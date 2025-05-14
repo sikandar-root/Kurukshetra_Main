@@ -26,6 +26,8 @@ public class OnlineSubsystem_Firebase : ModuleRules
 			new string[]
 			{
 				"Core",
+				
+				
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -38,7 +40,12 @@ public class OnlineSubsystem_Firebase : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
-				"FirebaseGoodies"
+				"FirebaseGoodies",
+				"OnlineSubsystem",
+				"CoreOnline",
+				"UMG"
+				//"RuntimeImageLoader"
+				
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

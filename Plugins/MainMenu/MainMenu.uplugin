@@ -22,10 +22,6 @@
 		{
 			"Name": "AndroidGoodies",
 			"Enabled": true
-		},
-		{
-			"Name": "GooglePlayGoodies",
-			"Enabled": true
 		}
 	]
 }
