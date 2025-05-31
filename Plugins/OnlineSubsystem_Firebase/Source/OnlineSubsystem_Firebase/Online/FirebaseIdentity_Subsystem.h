@@ -1,177 +1,204 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #pragma once
-//#include "FirebaseData_SaveGame.h"
-#include "Database/FGDatabaseRef.h"
-#include "Kismet/BlueprintAsyncActionBase.h"
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Auth/FGAuthCredentials.h"
+#include "Auth/FGAuthLibrary.h"
+#include "Database/FGDatabaseRef.h"
+#include "Kismet/BlueprintAsyncActionBase.h"
 #include "FirebaseIdentity_Subsystem.generated.h"
 
-// Forward declaration if necessary
-//struct FUserProfile;
+class UFGFirebaseUser;
+class UFirebaseData_SaveGame;
 
-//DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRecivedUserProfile, bool, IsSuccess, FUserProfile, Profile);
+/**
+ * Enum defining different authentication actions
+ */
+UENUM(BlueprintType)
+enum class EAuthAction : uint8
+{
+    Signup,
+    SignIn,
+    SignInWithCredential
+};
 
-
+/**
+ * Structure containing user profile data
+ */
 USTRUCT(BlueprintType)
 struct FUserProfile
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
-	// User's name
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UserProfile")
-	FString Name;
+    /** User's display name */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UserProfile")
+    FString Name;
 
-	// User's unique ID
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UserProfile")
-	int32 UserID;
+    /** Unique user identifier */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UserProfile")
+    int32 UserID;
 
-	// User's profile picture (dynamic texture)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UserProfile")
-	FString AvatarURL;
-	
+    /** URL to user's avatar image */
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UserProfile")
+    FString AvatarURL;
 };
 
-/**
- * 
- */
+/** Delegate for login success events */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLoginSuccess, UFGFirebaseUser*, User);
 
+/** Delegate for profile received events */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnUserProfileReceived, FUserProfile, Profile, FString, Message);
+
+/** Delegate for authentication response events */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FAuthResponse, bool, bWasSuccessful, UFGFirebaseUser*, User, FString, Message);
+
+/**
+ * Subsystem for managing Firebase authentication and user identity
+ */
 UCLASS()
 class ONLINESUBSYSTEM_FIREBASE_API UFirebaseIdentity_Subsystem : public UGameInstanceSubsystem
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
+
 public:
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	// User profile to be saved
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SaveGame")
-	FUserProfile UserProfile;
+    /** Called when user successfully logs in */
+    UPROPERTY(BlueprintAssignable, Category = "Firebase")
+    FOnLoginSuccess OnLoginSuccess;
 
-	UFUNCTION(BlueprintCallable, Category = "SaveGame")
-	static bool IsProfileExistInLocal(const FString UID, FUserProfile& Profile );
+    /** Currently logged in user */
+    UPROPERTY(BlueprintReadOnly, Category = "Firebase")
+    UFGFirebaseUser* CurrentUser;
 
-	UFUNCTION(BlueprintCallable, Category = "SaveGame")
-	static bool SaveProfileToLocal(FString UID, FUserProfile Profile );
+    /** Currently logged in user's ID */
+    UPROPERTY(BlueprintReadOnly, Category = "Firebase")
+    FString CurrentUID;
 
-	UFUNCTION(BlueprintCallable, Category = "SaveGame")
-	static bool IsProfileExistInMemory(const FString UID, FUserProfile& Profile );
+    /**
+     * Checks if a user profile exists in local storage
+     * @param UID - User ID to check
+     * @param Profile - Output parameter for found profile
+     * @return True if profile exists
+     */
+    UFUNCTION(BlueprintCallable, Category = "UserProfile")
+    static bool IsProfileExistInLocal(const FString& UID, FUserProfile& Profile);
 
-protected:
+    /**
+     * Saves user profile to local storage
+     * @param UID - User ID to save under
+     * @param Profile - Profile data to save
+     * @return True if save was successful
+     */
+    UFUNCTION(BlueprintCallable, Category = "UserProfile")
+    static bool SaveProfileToLocal(const FString& UID, const FUserProfile& Profile);
 
 private:
-	// UPROPERTY()
-	// UFirebaseData_SaveGame* SaveGame;
-	
-	
+    /** Internal handler for login success */
+    UFUNCTION()
+    void OnLoginSuccessInternal(UFGFirebaseUser* User);
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRecivedUserProfile, FUserProfile, Profile,FString, Message);
-// DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDownloadImageDelegate, UTexture2DDynamic*, Texture);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLoadImage, UObject*, Texture);
-
-
-
-// GetProfile Friend Request.
 /**
- * 
- *
- *
-**/
-
+ * Async action for retrieving user profiles
+ */
 UCLASS()
-class UGetProfile : public UBlueprintAsyncActionBase
+class UGetProfileAsync : public UBlueprintAsyncActionBase
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	// This function will be called to Accept the friend request
-	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
-	static UGetProfile* GetProfile(const FString UID );
+    /**
+     * Creates an async action to get user profile
+     * @param WorldContextObject - World context
+     * @param UID - User ID to get profile for
+     */
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static UGetProfileAsync* GetProfile(UObject* WorldContextObject, const FString& UID);
 
-	// Function to activate the async task
-	virtual void Activate() override;
+    virtual void Activate() override;
+
+    /** Called when profile is successfully retrieved */
+    UPROPERTY(BlueprintAssignable)
+    FOnUserProfileReceived OnSuccess;
+
+    /** Called when profile retrieval fails */
+    UPROPERTY(BlueprintAssignable)
+    FOnUserProfileReceived OnError;
 
 private:
-	// Internal storage for input and output values
-	
-	//UFGDatabaseRef* DatabaseRef;
-	FString UID;
-	FUserProfile Profile;
-	FFGValueVariant Values;
-	
-	
-	// Delegate to handle completion
+    /** Handles successful database response */
+    UFUNCTION()
+    void OnDataReceived(UFGDataSnapshot* Data);
 
-	UPROPERTY(BlueprintAssignable)
-	FOnRecivedUserProfile On_Sucess;
+    /** Handles cancelled database operation */
+    UFUNCTION()
+    void OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage);
 
-	UPROPERTY(BlueprintAssignable)
-	FOnRecivedUserProfile On_Error;
-
-	UPROPERTY()
-	FOnDataChangedDelegate OnCompleted;
-
-	// Delegate to handle cancellation
-	UPROPERTY()
-	FOnCancelledDelegate OnCancelled;
-
-	UFUNCTION()
-	void OnDataRecived(UFGDataSnapshot* Data);
-
-	UFUNCTION()
-	void OnCancelledOperation(int ErrorCode, FString ErrorMessage);
-	
-	
+    FString TargetUID;
+    FUserProfile Profile;
+    FOnDataChangedDelegate OnDataChangedDelegate;
+    FOnCancelledDelegate OnCancelledDelegate;
 };
 
+/**
+ * Async action for authentication operations
+ */
+UCLASS()
+class UFirebaseAuthAsync : public UBlueprintAsyncActionBase
+{
+    GENERATED_BODY()
 
-//UCLASS()
-//class ULoadImage_GIF : public UBlueprintAsyncActionBase
-//{
-//	GENERATED_BODY()
-//
-//public:
-//	// This function will be called to Accept the friend request
-//	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
-//	static ULoadImage_GIF* LoadImage_GIF(const FString URL );
-//
-//	// Function to activate the async task
-//	virtual void Activate() override;
-//
-//	
-//
-//private:
-//	// Internal storage for input and output values
-//	
-//	//UFGDatabaseRef* DatabaseRef;
-//	FString URL;
-//	FUserProfile Profile;
-//	FFGValueVariant Values;
-//	UObject Data;
-//	
-//	
-//	// Delegate to handle completion
-//
-//	UPROPERTY(BlueprintAssignable)
-//	FLoadImage On_Sucess;
-//
-//	UPROPERTY(BlueprintAssignable)
-//	FLoadImage On_Error;
-//
-//	UPROPERTY()
-//	FOnDataChangedDelegate OnCompleted;
-//
-//	// Delegate to handle cancellation
-//	UPROPERTY()
-//	FOnDataChangedDelegate OnCancelled;
-//
-//	/*UFUNCTION()
-//	void OnDownloadedImage(UAnimatedTexture2D* Texture);*/
-//
-//	UFUNCTION()
-//	void OnFailed(UTexture2DDynamic* Texture);
-//	
-//	
-//};
+public:
+    /**
+     * Creates an async action for email/password sign in
+     * @param WorldContextObject - World context
+     * @param IdentitySubsystem - Identity subsystem instance
+     * @param Email - User's email
+     * @param Password - User's password
+     */
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static UFirebaseAuthAsync* SignInWithEmailAndPassword(UObject* WorldContextObject, UFirebaseIdentity_Subsystem* IdentitySubsystem, const FString& Email, const FString& Password);
+
+    /**
+     * Creates an async action for email/password sign up
+     * @param WorldContextObject - World context
+     * @param IdentitySubsystem - Identity subsystem instance
+     * @param Email - User's email
+     * @param Password - User's password
+     */
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static UFirebaseAuthAsync* SignUpWithEmailAndPassword(UObject* WorldContextObject, UFirebaseIdentity_Subsystem* IdentitySubsystem, const FString& Email, const FString& Password);
+
+    /**
+     * Creates an async action for credential sign in
+     * @param WorldContextObject - World context
+     * @param IdentitySubsystem - Identity subsystem instance
+     * @param Credentials - Authentication credentials
+     */
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static UFirebaseAuthAsync* SignInWithCredential(UObject* WorldContextObject, UFirebaseIdentity_Subsystem* IdentitySubsystem, UFGAuthCredentials* Credentials);
+
+    virtual void Activate() override;
+
+    /** Called with authentication result */
+    UPROPERTY(BlueprintAssignable)
+    FAuthResponse OnAuthResponse;
+
+private:
+    /** Handles successful authentication */
+    UFUNCTION()
+    void HandleSuccess(UFGFirebaseUser* User);
+
+    /** Handles authentication error */
+    UFUNCTION()
+    void HandleError(const FString ErrorMessage);
+
+    FString Email;
+    FString Password;
+    UFirebaseIdentity_Subsystem* FirebaseIdentity;
+    UFGAuthCredentials* Credentials;
+    EAuthAction AuthAction;
+};

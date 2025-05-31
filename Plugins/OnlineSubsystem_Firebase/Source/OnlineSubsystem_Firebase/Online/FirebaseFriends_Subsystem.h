@@ -2,275 +2,194 @@
 
 #pragma once
 
-#include "Database/FGDatabaseRef.h"
-#include "Kismet/BlueprintAsyncActionBase.h"
-
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
+#include "Database/FGDatabaseRef.h"
+#include "Kismet/BlueprintAsyncActionBase.h"
 #include "FirebaseFriends_Subsystem.generated.h"
 
-/**
- * 
- */
 UENUM(BlueprintType)
-enum class EGetExes : uint8
+enum class EFriendRequestResult : uint8
 {
-	Then,
-	Success,
-	Failed
+    Success,
+    Failed,
+    Pending
 };
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOntest, bool , IsSuccess, FString ,FriendUID);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSucessGetFriendLists, const TArray<FString>&, Friends, bool,Result);
+USTRUCT(BlueprintType)
+struct FFriendData
+{
+    GENERATED_BODY()
 
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Friends")
+    FString UserID;
 
+    UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Friends")
+    FString ChatID;
+};
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FFriendRequestResultDelegate, bool, bWasSuccessful, FString, FriendUserID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FFriendListDelegate, const TArray<FFriendData>&, Friends, bool, bWasSuccessful);
+
+/**
+ * Subsystem for managing friend relationships using Firebase
+ */
 UCLASS()
 class ONLINESUBSYSTEM_FIREBASE_API UFirebaseFriends_Subsystem : public UGameInstanceSubsystem
 {
-	GENERATED_BODY()
-
-	public:
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
-	UPROPERTY()
-	TArray<FString> Friends;
-
-	UFUNCTION(BlueprintCallable, Category = "Firebase")
-	static void SetNetID( APlayerState* playerstete, FUniqueNetIdRepl Ptr);
-
-	UFUNCTION(BlueprintCallable, Category = "Firebase")
-	FUniqueNetIdRepl CreateUniqueIdFromString(const FString& StringId);
-
-};
-
-
-
-UCLASS()
-class UGetFriendLists : public UBlueprintAsyncActionBase
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintAssignable)
-	FOnSucessGetFriendLists On_Completed;
-
-	// This function will be called to start the async task
-	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
-	static UGetFriendLists* Get_Friend_List(UFirebaseFriends_Subsystem* Subsystem, FString UID);
-
-	// Function to activate the async task
-	virtual void Activate() override;
-
-	UFUNCTION()
-	void OnDataRecived(UFGDataSnapshot* Data);
-
-	UFUNCTION()
-	void OnCancelledOperation(int ErrorCode, FString ErrorMessage);
-
-private:
-	// Internal storage for input and output values
-	UFirebaseFriends_Subsystem* Subsystem;
-	FString UID;
-	
-
-	UPROPERTY()
-	FOnDataChangedDelegate OnCompleted;
-
-	// Delegate to handle cancellation
-	UPROPERTY()
-	FOnCancelledDelegate OnCancelled;
-};
-
-
-UCLASS()
-class UFindUser : public UBlueprintAsyncActionBase
-{
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	// This function will be called to start the async task
-	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
-	static UFindUser* FindUser(
-		const FString Value );
+    virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	// Function to activate the async task
-	virtual void Activate() override;
+    /** Cached friend data */
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Friends")
+    TArray<FFriendData> FriendData;
 
-	// Delegate to handle completion
-	/**
-	 * 
-	 */
+    /** Convert string to UniqueNetId */
+    UFUNCTION(BlueprintCallable, Category = "Friends")
+    FUniqueNetIdRepl CreateUniqueIdFromString(const FString& StringId);
 
-	UPROPERTY(BlueprintAssignable)
-	FOntest On_Completed;
-
-	UPROPERTY()
-	FOnDataChangedDelegate OnRecived;
-	
-
-	// UFUNCTION()
-	// void OnDataChanged(UFGDataSnapshot* Data);
-
-	UFUNCTION()
-	void OnCancelledOperation(int ErrorCode, FString ErrorMessage);
-
-	UFUNCTION()
-	void OnRecivedOperation(UFGDataSnapshot* Data);
-
-private:
-	// Internal storage for input and output values
-	UFGDatabaseRef* DatabaseRef;
-	FFGValueVariant Values;
-	UFGDataSnapshot* DataSnapshot;
-
-	UPROPERTY()
-	FOnDataChangedDelegate OnCompleted;
-
-	// Delegate to handle cancellation
-	UPROPERTY()
-	FOnCancelledDelegate OnCancelled;
+    /** Set network ID for player state */
+    UFUNCTION(BlueprintCallable, Category = "Friends")
+    static void SetPlayerNetworkID(APlayerState* PlayerState, FUniqueNetIdRepl NetId);
 };
 
-
-
-
-
-
-
-// Send Friend Request.
 /**
- *
- *
- *
-**/
-
+ * Async action for retrieving friend list
+ */
 UCLASS()
-class UsendFriendRequest : public UBlueprintAsyncActionBase
+class UGetFriendListAsync : public UBlueprintAsyncActionBase
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	// This function will be called to Send the friend request
-	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
-	static UsendFriendRequest* SendFriendRequest(
-		const FString FriendID, const FString UID );
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static UGetFriendListAsync* GetFriendList(UObject* WorldContextObject, const FString& UserID);
 
-	// Function to activate the async task
-	virtual void Activate() override;
+    UPROPERTY(BlueprintAssignable)
+    FFriendListDelegate OnCompleted;
+
+    virtual void Activate() override;
 
 private:
-	// Internal storage for input and output values
-	
-	UFGDatabaseRef* DatabaseRef;
-	FFGValueVariant Values;
-	UFGDataSnapshot* DataSnapshot;
-	FString FriendID;
-	FString UID;
-	
-	
+    UFUNCTION()
+    void OnDataReceived(UFGDataSnapshot* Data);
+    UFUNCTION()
+    void OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage);
 
-	// Delegate to handle completion
+    UPROPERTY()
+    FOnDataChangedDelegate OnDataChangedDelegate;
 
-	UPROPERTY(BlueprintAssignable)
-	FOntest On_Completed;
+    UPROPERTY()
+    FOnCancelledDelegate OnCancelledDelegate;
 
-	UPROPERTY()
-	FOnDataChangedDelegate OnFoundPlayerData;
-
-	// Delegate to handle cancellation
-	UPROPERTY()
-	FOnCancelledDelegate OnCancelled;
-	
-
-	UFUNCTION()
-	void FoundedPlayerProfile(UFGDataSnapshot* Data);
-
-	UFUNCTION()
-	TMap<FString,FFGValueVariant> GetDatabaseValue( FString UIDParam,  FString FriendUID, bool IsSender);
-
-	UFUNCTION()
-	void SetValueDatabase(FString UIDparam, FString FriendUIDparam);
+    FString TargetUserID;
+    UFirebaseFriends_Subsystem* FriendsSubsystem;
 };
 
-
-
-
-// Accept Friend Request.
 /**
- *
- *
- *
-**/
-
+ * Async action for finding users
+ */
 UCLASS()
-class UAcceptFriendRequest : public UBlueprintAsyncActionBase
+class UFindUserAsync : public UBlueprintAsyncActionBase
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	// This function will be called to Accept the friend request
-	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
-	static UAcceptFriendRequest* AcceptFriendRequest(
-		const FString FriendUID, const FString UID );
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static UFindUserAsync* FindUser(UObject* WorldContextObject, const FString& UsernameOrID);
 
-	// Function to activate the async task
-	virtual void Activate() override;
+    UPROPERTY(BlueprintAssignable)
+    FFriendRequestResultDelegate OnCompleted;
+
+    virtual void Activate() override;
 
 private:
-	// Internal storage for input and output values
-	
-	//UFGDatabaseRef* DatabaseRef;
-	FString FriendUID;
-	FString UID;
-	
-	
-	// Delegate to handle completion
+    void OnDataReceived(UFGDataSnapshot* Data);
+    void OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage);
 
-	UPROPERTY(BlueprintAssignable)
-	FOntest On_Completed;
-	
+    UPROPERTY()
+    FOnDataChangedDelegate OnDataChangedDelegate;
 
-	UFUNCTION()
-	TMap<FString,FFGValueVariant> GetDatabaseValue( FString UIDParam,  FString FriendUIDParam, bool IsFriend);
+    UPROPERTY()
+    FOnCancelledDelegate OnCancelledDelegate;
 
-	
+    FString SearchQuery;
+    UFGDatabaseRef* DatabaseRef;
 };
 
-
-
-// Reject / Widraw Friend Request.
 /**
- *
- *
- *
-**/
-
-UCLASS()
-class URejectFriendRequest : public UBlueprintAsyncActionBase
+ * Base class for friend request operations
+ */
+UCLASS(Abstract)
+class UFriendRequestAsyncBase : public UBlueprintAsyncActionBase
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
+
+protected:
+    FString SenderUserID;
+    FString TargetUserID;
+
+    UPROPERTY(BlueprintAssignable)
+    FFriendRequestResultDelegate OnCompleted;
+
+    TMap<FString, FFGValueVariant> CreateFriendDataValue(const FString& UserID, const FString& FriendID, bool bIsFriendRecord);
+};
+
+/**
+ * Async action for sending friend requests
+ */
+UCLASS()
+class USendFriendRequestAsync : public UFriendRequestAsyncBase
+{
+    GENERATED_BODY()
 
 public:
-	// This function will be called to Accept the friend request
-	UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true"))
-	static URejectFriendRequest* RejectFriendRequest(
-		const FString FriendUID, const FString UID );
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static USendFriendRequestAsync* SendFriendRequest(UObject* WorldContextObject, const FString& SenderUserID, const FString& TargetUserID);
 
-	// Function to activate the async task
-	virtual void Activate() override;
+    virtual void Activate() override;
 
 private:
-	// Internal storage for input and output values
-	
-	//UFGDatabaseRef* DatabaseRef;
-	FString FriendUID;
-	FString UID;
-	
-	
-	// Delegate to handle completion
+    void OnUserFound(UFGDataSnapshot* Data);
+    void OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage);
 
-	UPROPERTY(BlueprintAssignable)
-	FOntest On_Completed;
-	
-	
+    UPROPERTY()
+    FOnDataChangedDelegate OnDataChangedDelegate;
+
+    UPROPERTY()
+    FOnCancelledDelegate OnCancelledDelegate;
+
+    UFGDatabaseRef* UserDatabaseRef;
+};
+
+/**
+ * Async action for accepting friend requests
+ */
+UCLASS()
+class UAcceptFriendRequestAsync : public UFriendRequestAsyncBase
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static UAcceptFriendRequestAsync* AcceptFriendRequest(UObject* WorldContextObject, const FString& SenderUserID, const FString& TargetUserID);
+
+    virtual void Activate() override;
+};
+
+/**
+ * Async action for rejecting friend requests
+ */
+UCLASS()
+class URejectFriendRequestAsync : public UFriendRequestAsyncBase
+{
+    GENERATED_BODY()
+
+public:
+    UFUNCTION(BlueprintCallable, meta = (BlueprintInternalUseOnly = "true", WorldContext = "WorldContextObject"))
+    static URejectFriendRequestAsync* RejectFriendRequest(UObject* WorldContextObject, const FString& SenderUserID, const FString& TargetUserID);
+
+    virtual void Activate() override;
 };

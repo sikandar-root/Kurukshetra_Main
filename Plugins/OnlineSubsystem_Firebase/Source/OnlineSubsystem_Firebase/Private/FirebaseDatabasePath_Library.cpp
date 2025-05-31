@@ -3,8 +3,12 @@
 
 #include "FirebaseDatabasePath_Library.h"
 
+#include "Auth/FGAuthLibrary.h"
+#include "Auth/FGFirebaseUser.h"
+#include "Common/FGValueVariantAccess.h"
 #include "Database/FGDatabaseRef.h"
 #include "Database/FGDataSnapshot.h"
+#include "Database/FGDatabaseLibrary.h"
 #include "Engine/Engine.h"
 
 
@@ -104,5 +108,73 @@ UFGDatabaseRef* UFirebaseDatabasePath_Library::FriendsDBPath(const FString& UID)
 	return FriendRef;
 }
 
+UFGDatabaseRef* UFirebaseDatabasePath_Library::WorldChatDBPath(const FString& UID)
+{
+    FString BasePath = TEXT("chatRoom");
+    // Create a database reference from the base path
+    UFGDatabaseRef* DatabaseRef = UFGDatabaseRef::MakeDatabaseRefFromPath(BasePath);
+    if (!DatabaseRef)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create database reference from path: %s"), *BasePath);
+        return nullptr;
+    }
 
+    FFGValueVariant Datetime = UFGDatabaseLibrary::RealtimeDatabaseTimestamp();
+    FDateTime date = UFGValueVariantAccess::GetDateTime(Datetime);
+    int64 Timestamp = date.ToUnixTimestamp();
+    
+    FString Path = FString::Printf(TEXT("World/%d::%s"), Timestamp, *UID);
+    UFGDatabaseRef* WorldChatRef = DatabaseRef->Child(Path);
+	UE_LOG(LogTemp, Warning, TEXT("DatabasePath: %s"), *Path);
+    if (!WorldChatRef)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create child reference for path: %s"), *Path);
+        return nullptr;
+    }
 
+    return WorldChatRef;
+}
+
+UFGDatabaseRef* UFirebaseDatabasePath_Library::PrivateChatDBPath(const FString ChatID,const FString& UID)
+{
+	FString BasePath = TEXT("chatRoom");
+	// Create a database reference from the base path
+	UFGDatabaseRef* DatabaseRef = UFGDatabaseRef::MakeDatabaseRefFromPath(BasePath);
+	FFGValueVariant Datetime = UFGDatabaseLibrary::RealtimeDatabaseTimestamp();
+	FDateTime date = UFGValueVariantAccess::GetDateTime(Datetime);
+	int64 Timestamp = date.ToUnixTimestamp();
+    
+	FString Path = FString::Printf(TEXT("Private/%s/%lld::%s"), *ChatID, Timestamp, *UID);
+	return DatabaseRef->Child(Path);
+}
+
+// UFGDatabaseRef* UFirebaseDatabasePath_Library::PrivateChatDBPath(const FString& UserID1, const FString& UserID2)
+// {
+// 	FString BasePath = TEXT("chatRoom");
+// 	// Create a database reference from the base path
+// 	UFGDatabaseRef* DatabaseRef = UFGDatabaseRef::MakeDatabaseRefFromPath(BasePath);
+// 	// Create a deterministic chat ID so both users use the same path
+// 	FString ChatID = UserID1 < UserID2 ?
+// 		FString::Printf(TEXT("%s_%s"), *UserID1, *UserID2) :
+// 		FString::Printf(TEXT("%s_%s"), *UserID2, *UserID1);
+// 	
+// 	return DatabaseRef->Child("Private")->Child(ChatID);
+// }
+
+UFGDatabaseRef* UFirebaseDatabasePath_Library::WorldChatListenerDBPath()
+{
+	FString BasePath = TEXT("chatRoom");
+	// Create a database reference from the base path
+	UFGDatabaseRef* DatabaseRef = UFGDatabaseRef::MakeDatabaseRefFromPath(BasePath);
+	return DatabaseRef->Child("World");
+}
+
+UFGDatabaseRef* UFirebaseDatabasePath_Library::PrivateChatListenerDBPath(const FString& ChatID)
+{
+	FString BasePath = TEXT("chatRoom");
+	// Create a database reference from the base path
+	UFGDatabaseRef* DatabaseRef = UFGDatabaseRef::MakeDatabaseRefFromPath(BasePath);
+    
+	FString Path = FString::Printf(TEXT("Private/%s"), *ChatID);
+	return DatabaseRef->Child(Path);
+}

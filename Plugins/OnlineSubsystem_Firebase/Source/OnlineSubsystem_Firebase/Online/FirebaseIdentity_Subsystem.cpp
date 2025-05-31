@@ -1,188 +1,205 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "FirebaseIdentity_Subsystem.h"
-
-//#include <rapidjson/document.h>
-
-#include "FirebaseData_SaveGame.h"
-#include "Kismet/GameplayStatics.h"
 #include "FirebaseDatabasePath_Library.h"
-#include "CloudMessaging/FGRemoteMessage.h"
+#include "Kismet/GameplayStatics.h"
 #include "Database/FGDataSnapshot.h"
 #include "Common/FGValueVariantAccess.h"
-#include "Runtime/UMG/Public/Blueprint/AsyncTaskDownloadImage.h"
-//#include "RuntimeImageLoader/Public/RuntimeGifReader.h"
-
-
-UPROPERTY()
-UFirebaseData_SaveGame* SaveGame;
-
+#include "Auth/FGAuthLibrary.h"
+#include "FirebaseData_SaveGame.h"
 
 void UFirebaseIdentity_Subsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
-	Super::Initialize(Collection);
-	
-	// // Create a save game object
-	// UFirebaseData_SaveGame* SaveGameInstance = Cast<UFirebaseData_SaveGame>(UGameplayStatics::CreateSaveGameObject(UFirebaseData_SaveGame::StaticClass()));
-	// SaveGame = SaveGameInstance;
-	//
-	// FString slot;
-	//
-	// bool Test = UGameplayStatics::DoesSaveGameExist(slot,0);
-	// if (Test)
-	// {
-	// 	SaveGame = Cast<UFirebaseData_SaveGame>(UGameplayStatics::LoadGameFromSlot(slot,0));
-	// 	SaveGame->UserProfile;
-	// }
-	
+    Super::Initialize(Collection);
 }
 
-bool UFirebaseIdentity_Subsystem::IsProfileExistInLocal(const FString UID, FUserProfile& Profile)
+bool UFirebaseIdentity_Subsystem::IsProfileExistInLocal(const FString& UID, FUserProfile& Profile)
 {
-	if (UGameplayStatics::DoesSaveGameExist(UID,0))
-	{
-		SaveGame = Cast<UFirebaseData_SaveGame>(UGameplayStatics::LoadGameFromSlot(UID,0));
-		Profile=SaveGame->UserProfile;
-		return true;
-	}
-	
-		return false;
-	
+    if (UGameplayStatics::DoesSaveGameExist(UID, 0))
+    {
+        if (UFirebaseData_SaveGame* SaveGameInstance = Cast<UFirebaseData_SaveGame>(UGameplayStatics::LoadGameFromSlot(UID, 0)))
+        {
+            Profile = SaveGameInstance->UserProfile;
+            return true;
+        }
+    }
+    return false;
 }
 
-bool UFirebaseIdentity_Subsystem::SaveProfileToLocal(FString UID, FUserProfile Profile)
+bool UFirebaseIdentity_Subsystem::SaveProfileToLocal(const FString& UID, const FUserProfile& Profile)
 {
-	// Create a save game object
-	UFirebaseData_SaveGame* SaveGameInstance = Cast<UFirebaseData_SaveGame>(UGameplayStatics::CreateSaveGameObject(UFirebaseData_SaveGame::StaticClass()));
-	SaveGameInstance->UserProfile=Profile;
-	bool Result = UGameplayStatics::SaveGameToSlot(SaveGameInstance,UID,0);
-	return Result;
-	
+    if (UFirebaseData_SaveGame* SaveGameInstance = Cast<UFirebaseData_SaveGame>(UGameplayStatics::CreateSaveGameObject(UFirebaseData_SaveGame::StaticClass())))
+    {
+        SaveGameInstance->UserProfile = Profile;
+        return UGameplayStatics::SaveGameToSlot(SaveGameInstance, UID, 0);
+    }
+    return false;
 }
 
-bool UFirebaseIdentity_Subsystem::IsProfileExistInMemory(const FString UID, FUserProfile& Profile)
+void UFirebaseIdentity_Subsystem::OnLoginSuccessInternal(UFGFirebaseUser* User)
 {
-	if (UGameplayStatics::DoesSaveGameExist(UID, 0))
-	{
-		
-	}
-	return false;
+    CurrentUser = User;
+    CurrentUID = User->GetUid();
+    OnLoginSuccess.Broadcast(User);
 }
 
-// Async function to retrieve a user's profile
-UGetProfile* UGetProfile::GetProfile(const FString UID)
+UGetProfileAsync* UGetProfileAsync::GetProfile(UObject* WorldContextObject, const FString& UID)
 {
-	// Create an async action object
-	UGetProfile* AsyncAction = NewObject<UGetProfile>();
-	UE_LOG(LogTemp, Log, TEXT("Async action created"));
-
-	// Store the provided UID for use in other methods
-	AsyncAction->UID = UID;
-
-	// Return the async function object so it can be activated
-	return AsyncAction;
+    UGetProfileAsync* Action = NewObject<UGetProfileAsync>();
+    Action->TargetUID = UID;
+    Action->RegisterWithGameInstance(WorldContextObject);
+    return Action;
 }
 
-void UGetProfile::Activate()
+void UGetProfileAsync::Activate()
 {
-	// Construct the save slot name using the UID
-	const FString SlotName = UID + TEXT("Profile");
+    const FString SlotName = TargetUID + TEXT("Profile");
 
-	// Check if a saved game file exists locally
-	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
-	{
-		// Load the saved profile from the save slot
-		UFirebaseData_SaveGame* SaveGameInstance = Cast<UFirebaseData_SaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
-		if (SaveGameInstance)
-		{
-			Profile = SaveGameInstance->UserProfile;
-			On_Sucess.Broadcast(Profile,"Success");
-			return;
-		}
-	}
+    // First try to load from local storage
+    if (UFirebaseIdentity_Subsystem::IsProfileExistInLocal(SlotName, Profile))
+    {
+        OnSuccess.Broadcast(Profile, TEXT("Loaded from local storage"));
+        return;
+    }
 
-	// If no local save exists, fetch data from the Firebase database
-	OnCancelled.BindDynamic(this, &UGetProfile::OnCancelledOperation);
-	OnCompleted.BindDynamic(this, &UGetProfile::OnDataRecived);
+    // If not found locally, query Firebase database
+    OnDataChangedDelegate.BindDynamic(this, &UGetProfileAsync::OnDataReceived);
+    OnCancelledDelegate.BindDynamic(this, &UGetProfileAsync::OnOperationCancelled);
 
-	UFGDatabaseRef* Database = UFirebaseDatabasePath_Library::PlayerProfileDBPath(UID);
-	if (Database)
-	{
-		Database->GetValue(OnCompleted, OnCancelled);
-	}
-	else
-	{
-		On_Error.Broadcast(Profile,"Failed");
-	}
+    if (UFGDatabaseRef* Database = UFirebaseDatabasePath_Library::PlayerProfileDBPath(TargetUID))
+    {
+        Database->GetValue(OnDataChangedDelegate, OnCancelledDelegate);
+    }
+    else
+    {
+        OnError.Broadcast(Profile, TEXT("Failed to create database reference"));
+    }
 }
 
-void UGetProfile::OnDataRecived(UFGDataSnapshot* Data)
+void UGetProfileAsync::OnDataReceived(UFGDataSnapshot* Data)
 {
-	// Construct the save slot name using the UID
-	const FString SlotName = UID + TEXT("Profile");
+    if (Data && Data->Exists())
+    {
+        const TMap<FString, FFGValueVariant> Result = UFGValueVariantAccess::GetMap(Data->GetValue());
+        
+        // Extract profile data from database result
+        Profile.Name = UFGValueVariantAccess::GetString(Result.FindRef(TEXT("Name")));
+        Profile.UserID = UFGValueVariantAccess::GetInteger(Result.FindRef(TEXT("UserID")));
+        Profile.AvatarURL = UFGValueVariantAccess::GetString(Result.FindRef(TEXT("PhotoURL")));
 
-	// Check if the data exists
-	if (Data && Data->Exists())
-	{
-		// Extract the result map from the data
-		TMap<FString, FFGValueVariant> Result = UFGValueVariantAccess::GetMap(Data->GetValue());
+        // Save the loaded profile locally
+        const FString SlotName = TargetUID + TEXT("Profile");
+        UFirebaseIdentity_Subsystem::SaveProfileToLocal(SlotName, Profile);
 
-		// Safely extract profile data from the map
-		Profile.Name      = UFGValueVariantAccess::GetString(Result.FindRef(TEXT("Name")));
-		Profile.UserID    = UFGValueVariantAccess::GetInteger(Result.FindRef(TEXT("UserID")));
-		Profile.AvatarURL = UFGValueVariantAccess::GetString(Result.FindRef(TEXT("PhotoURL")));
-
-		// Save the profile locally
-		UFirebaseIdentity_Subsystem::SaveProfileToLocal(SlotName, Profile);
-
-		// Broadcast the success delegate
-		On_Sucess.Broadcast(Profile,"Success");
-	}
-	else
-	{
-		On_Error.Broadcast(Profile,"Failed");
-	}
+        OnSuccess.Broadcast(Profile, TEXT("Success"));
+    }
+    else
+    {
+        OnError.Broadcast(Profile, TEXT("Profile data not found"));
+    }
 }
 
-void UGetProfile::OnCancelledOperation(int ErrorCode, FString ErrorMessage)
+void UGetProfileAsync::OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage)
 {
-	// Broadcast the error delegate with the provided message
-	On_Error.Broadcast(Profile,FString::Printf(TEXT("Operation cancelled: %s (Error Code: %d)"), *ErrorMessage, ErrorCode));
+    OnError.Broadcast(Profile, FString::Printf(TEXT("Operation cancelled: %s (Code: %d)"), *ErrorMessage, ErrorCode));
 }
 
-//ULoadImage_GIF* ULoadImage_GIF::LoadImage_GIF(const FString URL)
-//{
-//	// Create an async action object
-//	ULoadImage_GIF* AsyncAction = NewObject<ULoadImage_GIF>();
-//	UE_LOG(LogTemp, Log, TEXT("Async action created"));
-//
-//	// Store the provided UID for use in other methods
-//	AsyncAction->URL = URL;
-//
-//	// Return the async function object so it can be activated
-//	return AsyncAction;
-//}
-//
-//void ULoadImage_GIF::Activate()
-//{
-//
-//	UAsyncTaskDownloadImage* mDownloadTask = NewObject<UAsyncTaskDownloadImage>();
-//	mDownloadTask->OnFail.AddDynamic(this, &ULoadImage_GIF::OnFailed);
-//	//mDownloadTask->OnSuccess.AddDynamic(this, &ULoadImage_GIF::OnDownloadedImage);
-//	mDownloadTask->Start(URL);
-//	
-//}
-//
-////void ULoadImage_GIF::OnDownloadedImage(UAnimatedTexture2D* Texture)
-////{
-////	On_Sucess.Broadcast(Texture);
-////}
-//
-//void ULoadImage_GIF::OnFailed(UTexture2DDynamic* Texture)
-//{
-//	//URuntimeGifReader* GifReader = NewObject<URuntimeGifReader>();
-//	// GifReader->OnSuccess.AddDynamic(this, &ULoadImage_GIF::OnDownloadedImage);
-//	// GifReader->LoadGIF(URL,TextureFilter::TF_Trilinear);
-//	//On_Error.Broadcast(Texture);
-//}
+UFirebaseAuthAsync* UFirebaseAuthAsync::SignInWithEmailAndPassword(UObject* WorldContextObject, UFirebaseIdentity_Subsystem* IdentitySubsystem, const FString& Email, const FString& Password)
+{
+    UFirebaseAuthAsync* Action = NewObject<UFirebaseAuthAsync>();
+    Action->Email = Email;
+    Action->Password = Password;
+    Action->FirebaseIdentity = IdentitySubsystem;
+    Action->AuthAction = EAuthAction::SignIn;
+    Action->RegisterWithGameInstance(WorldContextObject);
+    return Action;
+}
+
+UFirebaseAuthAsync* UFirebaseAuthAsync::SignUpWithEmailAndPassword(UObject* WorldContextObject, UFirebaseIdentity_Subsystem* IdentitySubsystem, const FString& Email, const FString& Password)
+{
+    UFirebaseAuthAsync* Action = NewObject<UFirebaseAuthAsync>();
+    Action->Email = Email;
+    Action->Password = Password;
+    Action->FirebaseIdentity = IdentitySubsystem;
+    Action->AuthAction = EAuthAction::Signup;
+    Action->RegisterWithGameInstance(WorldContextObject);
+    return Action;
+}
+
+UFirebaseAuthAsync* UFirebaseAuthAsync::SignInWithCredential(UObject* WorldContextObject, UFirebaseIdentity_Subsystem* IdentitySubsystem, UFGAuthCredentials* Credentials)
+{
+    UFirebaseAuthAsync* Action = NewObject<UFirebaseAuthAsync>();
+    Action->Credentials = Credentials;
+    Action->FirebaseIdentity = IdentitySubsystem;
+    Action->AuthAction = EAuthAction::SignInWithCredential;
+    Action->RegisterWithGameInstance(WorldContextObject);
+    return Action;
+}
+
+void UFirebaseAuthAsync::Activate()
+{
+    if (!FirebaseIdentity)
+    {
+        HandleError(TEXT("Invalid identity subsystem"));
+        return;
+    }
+
+    // Use the static UFGAuthLibrary functions for authentication
+    FAuthUserDelegate SuccessDelegate;
+    SuccessDelegate.BindDynamic(this, &UFirebaseAuthAsync::HandleSuccess);
+    
+    FAuthStringDelegate ErrorDelegate;
+    ErrorDelegate.BindDynamic(this, &UFirebaseAuthAsync::HandleError);
+
+    switch (AuthAction)
+    {
+    case EAuthAction::Signup:
+        if (Email.IsEmpty() || Password.IsEmpty())
+        {
+            HandleError(TEXT("Email and password required"));
+            return;
+        }
+        UFGAuthLibrary::CreateUser(Email, Password, SuccessDelegate, ErrorDelegate);
+        break;
+        
+    case EAuthAction::SignIn:
+        if (Email.IsEmpty() || Password.IsEmpty())
+        {
+            HandleError(TEXT("Email and password required"));
+            return;
+        }
+        UFGAuthLibrary::SignInWithEmailAndPassword(Email, Password, SuccessDelegate, ErrorDelegate);
+        break;
+        
+    case EAuthAction::SignInWithCredential:
+        if (!Credentials)
+        {
+            HandleError(TEXT("Invalid credentials"));
+            return;
+        }
+        // Convert credentials to proper type
+        // TSharedPtr<IFirebaseAuthCredentials> NativeCredentials = Credentials->GetCredentials();
+        UFGAuthLibrary::SignInWithCredentials(Credentials, SuccessDelegate, ErrorDelegate);
+        break;
+        
+    default:
+        HandleError(TEXT("Unknown auth action"));
+        break;
+    }
+}
+
+void UFirebaseAuthAsync::HandleSuccess(UFGFirebaseUser* User)
+{
+    if (FirebaseIdentity)
+    {
+        FirebaseIdentity->CurrentUser = User;
+        FirebaseIdentity->CurrentUID = User->GetUid();
+        FirebaseIdentity->OnLoginSuccess.Broadcast(User);
+    }
+    OnAuthResponse.Broadcast(true, User, TEXT("Success"));
+}
+
+void UFirebaseAuthAsync::HandleError(const FString ErrorMessage)
+{
+    OnAuthResponse.Broadcast(false, nullptr, ErrorMessage);
+}

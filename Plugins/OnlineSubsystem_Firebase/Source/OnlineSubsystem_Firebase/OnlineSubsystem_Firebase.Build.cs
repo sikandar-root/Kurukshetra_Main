@@ -44,6 +44,9 @@ public class OnlineSubsystem_Firebase : ModuleRules
 				"OnlineSubsystem",
 				"CoreOnline",
 				"UMG"
+				"OnlineSubsystemUtils",
+				"InputCore",
+				"AndroidGoodies"
 				//"RuntimeImageLoader"
 				
 				// ... add private dependencies that you statically link with here ...	

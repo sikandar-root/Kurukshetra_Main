@@ -1,46 +1,24 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "FirebaseFriends_Subsystem.h"
-
-#include "AudioDevice.h"
-#include "Database/FGDatabaseRef.h"
-#include "Database/FGDataSnapshot.h"
-#include "Engine/Engine.h"
 #include "FirebaseDatabasePath_Library.h"
-#include "OnlineSubsystem.h"
-#include "Common/FGValueVariant.h"
+#include "Database/FGDatabaseLibrary.h"
+#include "Database/FGDataSnapshot.h"
 #include "Common/FGValueVariantAccess.h"
 #include "Common/FGValueVariantConv.h"
-#include "Database/FGDatabaseLibrary.h"
-#include "GameFramework/PlayerState.h"
-#include "GameFramework/PlayerController.h"
-#include "Online/CoreOnline.h"
-#include "OnlineSubsystemTypes.h"
+#include "OnlineSubsystem.h"
 #include "Interfaces/OnlineIdentityInterface.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerState.h"
 
 void UFirebaseFriends_Subsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 }
 
-
-void UFirebaseFriends_Subsystem::SetNetID(APlayerState* playerstete,FUniqueNetIdRepl Ptr)
-{
-    
-    // Set the custom Net ID in the PlayerState
-    playerstete->SetUniqueId(Ptr);
-}
-
 FUniqueNetIdRepl UFirebaseFriends_Subsystem::CreateUniqueIdFromString(const FString& StringId)
 {
-    IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
-    if (OnlineSubsystem)
+    if (IOnlineSubsystem* OnlineSub = IOnlineSubsystem::Get())
     {
-        const IOnlineIdentityPtr IdentityInterface =OnlineSubsystem->GetIdentityInterface();
-
-        if (IdentityInterface.IsValid())
+        if (const IOnlineIdentityPtr IdentityInterface = OnlineSub->GetIdentityInterface())
         {
             return IdentityInterface->CreateUniquePlayerId(StringId);
         }
@@ -48,293 +26,241 @@ FUniqueNetIdRepl UFirebaseFriends_Subsystem::CreateUniqueIdFromString(const FStr
     return nullptr;
 }
 
-
-
-UGetFriendLists* UGetFriendLists::Get_Friend_List(UFirebaseFriends_Subsystem* Subsystem, FString UID)
+void UFirebaseFriends_Subsystem::SetPlayerNetworkID(APlayerState* PlayerState, FUniqueNetIdRepl NetId)
 {
-    UGetFriendLists* AsyncAction = NewObject<UGetFriendLists>();
-    UE_LOG(LogTemp, Log, TEXT("Async action created"));
-    AsyncAction->Subsystem= Subsystem;
-    AsyncAction->UID = UID;
-
-    // Return the async function object so it can be activated
-    return AsyncAction;
-}
-
-void UGetFriendLists::Activate()
-{
-    if (Subsystem->Friends.IsEmpty())
+    if (PlayerState != nullptr) // Changed from IsValid to simple nullptr check
     {
-        // Bind your delegate
-        OnCompleted.BindDynamic(this, &UGetFriendLists::OnDataRecived);
-        OnCancelled.BindDynamic(this, &UGetFriendLists::OnCancelledOperation);
-    
-        UFGDatabaseRef* Database =  UFirebaseDatabasePath_Library::FriendsDBPath(UID);
-        Database->GetValue(OnCompleted,OnCancelled);
+        PlayerState->SetUniqueId(NetId);
     }
     else
     {
-        TArray<FString> FriendsParam ;
-        FriendsParam = Subsystem->Friends;
-        On_Completed.Broadcast(FriendsParam,true);
+        UE_LOG(LogTemp, Warning, TEXT("Invalid PlayerState provided to SetPlayerNetworkID"));
     }
-    
 }
 
-void UGetFriendLists::OnDataRecived(UFGDataSnapshot* Data)
+//////////////////////////////////////////////////////////////////////////
+// Get Friend List Async Action
+//////////////////////////////////////////////////////////////////////////
+
+UGetFriendListAsync* UGetFriendListAsync::GetFriendList(UObject* WorldContextObject, const FString& UserID)
 {
-    TMap<FString, FFGValueVariant> Result ;
-    TArray<FString> Friends ;
-    FString Test;
-
-
-    // Get the value from the snapshot
-    FFGValueVariant Value = Data->GetValue();
-        
-    Result = UFGValueVariantAccess::GetMap(Value);
-    Result.GetKeys(Friends);
-
-    Subsystem->Friends = Friends;
-    On_Completed.Broadcast(Friends,true);
-
+    UGetFriendListAsync* Action = NewObject<UGetFriendListAsync>();
+    Action->TargetUserID = UserID;
+    Action->FriendsSubsystem = UGameInstance::GetSubsystem<UFirebaseFriends_Subsystem>(UGameplayStatics::GetGameInstance(WorldContextObject));
+    return Action;
 }
 
-void UGetFriendLists::OnCancelledOperation(int ErrorCode, FString ErrorMessage)
+void UGetFriendListAsync::Activate()
 {
-    TArray<FString> Friends ;
-    
-    // Log the creation of the async action object
-    UE_LOG(LogTemp, Log, TEXT("On Canclled"));
-    On_Completed.Broadcast(Friends,false);
-}
-
-UFindUser* UFindUser::FindUser(const FString Value)
-{
-    // Log the value being used for the query
-    UE_LOG(LogTemp, Log, TEXT("FindUser called with Value: %s"), *Value);
-
-    // Create a new instance of the async action
-    UFindUser* AsyncAction = NewObject<UFindUser>();
-
-    // Log the creation of the async action object
-    UE_LOG(LogTemp, Log, TEXT("Async action created"));
-
-    // Store the database reference and values
-    AsyncAction->DatabaseRef = UFirebaseDatabasePath_Library::UserIdsDBPath(Value);
-
-    // Log the database reference path being used
-    //UE_LOG(LogTemp, Log, TEXT("Database path set to: %s"), *AsyncAction->DatabaseRef->GetPath());
-
-    // Return the async function object so it can be activated
-    return AsyncAction;
-}
-
-void UFindUser::Activate()
-{
-    // Log the activation of the action
-    UE_LOG(LogTemp, Log, TEXT("Activate called"));
-
-    // Bind your delegate
-    OnCancelled.BindDynamic(this, &UFindUser::OnCancelledOperation);
-    OnRecived.BindDynamic(this, &UFindUser::OnRecivedOperation);
-
-    // Log that the delegate is set up
-    UE_LOG(LogTemp, Log, TEXT("Delegates bound, calling GetValue"));
-
-    DatabaseRef->GetValue(OnRecived, OnCancelled);
-}
-
-void UFindUser::OnCancelledOperation(int ErrorCode, FString ErrorMessage)
-{
-    // Log the error when the operation is cancelled
-    UE_LOG(LogTemp, Warning, TEXT("Operation cancelled! ErrorCode: %d, ErrorMessage: %s"), ErrorCode, *ErrorMessage);
-
-    // Broadcast the completion with failure status
-    On_Completed.Broadcast(false, ErrorMessage);
-}
-
-void UFindUser::OnRecivedOperation(UFGDataSnapshot* Data)
-{
-    // Log the received data snapshot
-    if (Data->Exists())
+    if (FriendsSubsystem && !FriendsSubsystem->FriendData.IsEmpty())
     {
-        UE_LOG(LogTemp, Log, TEXT("Data received successfully"));
-
-        // Get the value from the snapshot
-        Values = Data->GetValue();
-
-        // Log the value retrieved from the snapshot
-        UE_LOG(LogTemp, Log, TEXT("Values retrieved from DataSnapshot: "));
-
-        FString Ok = UFGValueVariantAccess::GetString(Values);
-            
-            // Log the string value retrieved
-            UE_LOG(LogTemp, Log, TEXT("Test string: %s"), *Ok);
-            
-            // Broadcast the completion with success status
-            On_Completed.Broadcast(true, Ok);
-       
+        OnCompleted.Broadcast(FriendsSubsystem->FriendData, true);
+        return;
     }
-    else
+
+    OnDataChangedDelegate.BindDynamic(this, &UGetFriendListAsync::OnDataReceived);
+    OnCancelledDelegate.BindDynamic(this, &UGetFriendListAsync::OnOperationCancelled);
+
+    UFGDatabaseRef* DatabaseRef = UFirebaseDatabasePath_Library::FriendsDBPath(TargetUserID);
+    DatabaseRef->GetValue(OnDataChangedDelegate, OnCancelledDelegate);
+}
+
+void UGetFriendListAsync::OnDataReceived(UFGDataSnapshot* Data)
+{
+    TArray<FFriendData> FriendList;
+    const TMap<FString, FFGValueVariant> FriendMap = UFGValueVariantAccess::GetMap(Data->GetValue());
+
+    for (const auto& Pair : FriendMap)
     {
-        // Log if Data is null
-        UE_LOG(LogTemp, Warning, TEXT("Received data is null"));
+        FFriendData NewFriend;
+        NewFriend.UserID = Pair.Key;
 
-        // Broadcast failure completion
-        On_Completed.Broadcast(false, FString("Received data is null"));
+        const TMap<FString, FFGValueVariant> InnerMap = UFGValueVariantAccess::GetMap(Pair.Value);
+        if (const FFGValueVariant* ChatIDValue = InnerMap.Find(TEXT("ChatID")))
+        {
+            NewFriend.ChatID = UFGValueVariantAccess::GetString(*ChatIDValue);
+        }
+
+        FriendList.Add(NewFriend);
     }
+
+    if (FriendsSubsystem)
+    {
+        FriendsSubsystem->FriendData = FriendList;
+    }
+
+    OnCompleted.Broadcast(FriendList, true);
 }
 
-UsendFriendRequest* UsendFriendRequest::SendFriendRequest(const FString FriendID, const FString UID)
+void UGetFriendListAsync::OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage)
 {
- 
-    UsendFriendRequest* AsyncAction = NewObject<UsendFriendRequest>();
-    UE_LOG(LogTemp, Log, TEXT("Async action created"));
-
-    AsyncAction->FriendID = FriendID;
-    AsyncAction->UID = UID;
-    AsyncAction->DatabaseRef=UFirebaseDatabasePath_Library::UserIdsDBPath(FriendID);
-
-    // Return the async function object so it can be activated
-    return AsyncAction;
+    OnCompleted.Broadcast(TArray<FFriendData>(), false);
 }
 
-void UsendFriendRequest::Activate()
+//////////////////////////////////////////////////////////////////////////
+// Find User Async Action
+//////////////////////////////////////////////////////////////////////////
+
+UFindUserAsync* UFindUserAsync::FindUser(UObject* WorldContextObject, const FString& UsernameOrID)
 {
-    OnFoundPlayerData.BindDynamic(this, &UsendFriendRequest::FoundedPlayerProfile);
-    DatabaseRef->GetValue(OnFoundPlayerData, OnCancelled);
-    
+    UFindUserAsync* Action = NewObject<UFindUserAsync>();
+    Action->SearchQuery = UsernameOrID;
+    Action->DatabaseRef = UFirebaseDatabasePath_Library::UserIdsDBPath(UsernameOrID);
+    return Action;
 }
 
-void UsendFriendRequest::FoundedPlayerProfile(UFGDataSnapshot* Data)
+void UFindUserAsync::Activate()
+{
+    OnDataChangedDelegate.BindDynamic(this, &UFindUserAsync::OnDataReceived);
+    OnCancelledDelegate.BindDynamic(this, &UFindUserAsync::OnOperationCancelled);
+    DatabaseRef->GetValue(OnDataChangedDelegate, OnCancelledDelegate);
+}
+
+void UFindUserAsync::OnDataReceived(UFGDataSnapshot* Data)
 {
     if (Data->Exists())
     {
-        Values = Data->GetValue();
+        const FString UserID = UFGValueVariantAccess::GetString(Data->GetValue());
+        OnCompleted.Broadcast(true, UserID);
+    }
+    else
+    {
+        OnCompleted.Broadcast(false, FString());
+    }
+}
 
-        FString FriendUID = UFGValueVariantAccess::GetString(Values);
+void UFindUserAsync::OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage)
+{
+    OnCompleted.Broadcast(false, ErrorMessage);
+}
 
-        SetValueDatabase(UID, FriendUID);
+//////////////////////////////////////////////////////////////////////////
+// Friend Request Base
+//////////////////////////////////////////////////////////////////////////
+
+TMap<FString, FFGValueVariant> UFriendRequestAsyncBase::CreateFriendDataValue(const FString& UserID, const FString& FriendID, bool bIsFriendRecord)
+{
+    TMap<FString, FFGValueVariant> Data;
+    
+    if (bIsFriendRecord)
+    {
+        TMap<FString, FFGValueVariant> FriendData;
+        FriendData.Add(TEXT("CreatedAt"), UFGDatabaseLibrary::RealtimeDatabaseTimestamp());
         
+        const FString ChatID = FString::Printf(TEXT("%s::%s"), *UserID, *FriendID);
+        FriendData.Add(TEXT("ChatID"), UFGValueVariantConv::Conv_StringToFGValueVariant(ChatID));
+        
+        Data.Add(FriendID, UFGValueVariantConv::Conv_MapToFGValueVariant(FriendData));
     }
     else
     {
-        // Broadcast Success completion
-        On_Completed.Broadcast(false, FString("Received data is null"));
+        Data.Add(TEXT("from"), UFGValueVariantConv::Conv_StringToFGValueVariant(UserID));
+        Data.Add(TEXT("to"), UFGValueVariantConv::Conv_StringToFGValueVariant(FriendID));
+        Data.Add(TEXT("IsSender"), UFGValueVariantConv::Conv_boolToFGValueVariant(bIsFriendRecord));
     }
+    
+    return Data;
 }
 
-TMap<FString, FFGValueVariant> UsendFriendRequest::GetDatabaseValue(FString UIDParam, FString FriendUID, bool IsSender)
+//////////////////////////////////////////////////////////////////////////
+// Send Friend Request Async Action
+//////////////////////////////////////////////////////////////////////////
+
+USendFriendRequestAsync* USendFriendRequestAsync::SendFriendRequest(UObject* WorldContextObject, const FString& SenderUserID, const FString& TargetUserID)
 {
-    TMap<FString, FFGValueVariant> Result;
-    
-        Result.Add(TEXT("from"),UFGValueVariantConv::Conv_StringToFGValueVariant(UIDParam));
-        Result.Add(TEXT("to"),UFGValueVariantConv::Conv_StringToFGValueVariant(FriendUID));
-        Result.Add(TEXT("IsSender"),UFGValueVariantConv::Conv_boolToFGValueVariant(IsSender));
-    
-    return Result;
+    USendFriendRequestAsync* Action = NewObject<USendFriendRequestAsync>();
+    Action->SenderUserID = SenderUserID;
+    Action->TargetUserID = TargetUserID;
+    Action->UserDatabaseRef = UFirebaseDatabasePath_Library::UserIdsDBPath(TargetUserID);
+    return Action;
 }
 
-void UsendFriendRequest::SetValueDatabase(FString UIDparam, FString FriendUIDparam)
+void USendFriendRequestAsync::Activate()
 {
-    UFGDatabaseRef* SenderDatabaseRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(UIDparam,FriendUIDparam,true);
-    SenderDatabaseRef->UpdateChildren(GetDatabaseValue(UIDparam, FriendUIDparam, true));
-    UFGDatabaseRef* ReciverDatabaseRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(UIDparam,FriendUIDparam,false);
-    ReciverDatabaseRef->UpdateChildren(GetDatabaseValue(UIDparam, FriendUIDparam, false));
-    
-    // Broadcast Success completion
-    On_Completed.Broadcast(true, FriendUIDparam);
+    OnDataChangedDelegate.BindDynamic(this, &USendFriendRequestAsync::OnUserFound);
+    OnCancelledDelegate.BindDynamic(this, &USendFriendRequestAsync::OnOperationCancelled);
+    UserDatabaseRef->GetValue(OnDataChangedDelegate, OnCancelledDelegate);
 }
 
-
-
-
-
-UAcceptFriendRequest* UAcceptFriendRequest::AcceptFriendRequest(const FString FriendUID, const FString UID)
+void USendFriendRequestAsync::OnUserFound(UFGDataSnapshot* Data)
 {
-    UAcceptFriendRequest* AsyncAction = NewObject<UAcceptFriendRequest>();
-    UE_LOG(LogTemp, Log, TEXT("Async action created"));
-
-    AsyncAction->FriendUID = FriendUID;
-    AsyncAction->UID = UID;
-    //AsyncAction->DatabaseRef=UFirebaseDatabasePath_Library::FriendsDBPath(FriendUID);
-
-    // Return the async function object so it can be activated
-    return AsyncAction;
-}
-
-void UAcceptFriendRequest::Activate()
-{
-    UFGDatabaseRef* PlayerDBRef = UFirebaseDatabasePath_Library::FriendsDBPath(UID);
-    PlayerDBRef->UpdateChildren(GetDatabaseValue(UID, FriendUID, false));
-
-    UFGDatabaseRef* FriendDBRef = UFirebaseDatabasePath_Library::FriendsDBPath(FriendUID);
-    FriendDBRef->UpdateChildren(GetDatabaseValue(UID, FriendUID, true));
-
-
-    UFGDatabaseRef* SenderDatabaseRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(UID,FriendUID,true);
-    UFGDatabaseRef* ReciverDatabaseRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(UID,FriendUID,false);
-
-    SenderDatabaseRef->RemoveValue();
-    ReciverDatabaseRef->RemoveValue();
-
-    On_Completed.Broadcast(true, FriendUID);
-}
-
-TMap<FString, FFGValueVariant> UAcceptFriendRequest::GetDatabaseValue(FString UIDParam, FString FriendUIDParam,
-    bool IsFriend)
-{
-
-    TMap<FString, FFGValueVariant> Result;
-
-    TMap<FString, FFGValueVariant> Value;
-
-    FString ChatID = FString::Printf(TEXT("%s::%s"),*UIDParam,*FriendUIDParam);
-
-    
-
-    Value.Add(TEXT("CreatedAt"),UFGDatabaseLibrary::RealtimeDatabaseTimestamp());
-    Value.Add(TEXT("ChatID"), UFGValueVariantConv::Conv_StringToFGValueVariant(ChatID));
-    
-    if (IsFriend)
+    if (Data->Exists())
     {
-        Result.Add(UIDParam,UFGValueVariantConv::Conv_MapToFGValueVariant(Value));
+        const FString FriendUserID = UFGValueVariantAccess::GetString(Data->GetValue());
+        
+        // Update sender's request record
+        UFGDatabaseRef* SenderDBRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(SenderUserID, FriendUserID, true);
+        SenderDBRef->UpdateChildren(CreateFriendDataValue(SenderUserID, FriendUserID, false));
+        
+        // Update receiver's request record
+        UFGDatabaseRef* ReceiverDBRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(SenderUserID, FriendUserID, false);
+        ReceiverDBRef->UpdateChildren(CreateFriendDataValue(SenderUserID, FriendUserID, false));
+        
+        OnCompleted.Broadcast(true, FriendUserID);
     }
     else
     {
-        Result.Add(FriendUIDParam,UFGValueVariantConv::Conv_MapToFGValueVariant(Value));
+        OnCompleted.Broadcast(false, FString());
     }
-
-    return Result;
 }
 
-URejectFriendRequest* URejectFriendRequest::RejectFriendRequest(const FString FriendUID, const FString UID)
+void USendFriendRequestAsync::OnOperationCancelled(int32 ErrorCode, const FString ErrorMessage)
 {
-    URejectFriendRequest* AsyncAction = NewObject<URejectFriendRequest>();
-    UE_LOG(LogTemp, Log, TEXT("Async action created"));
-
-    AsyncAction->FriendUID = FriendUID;
-    AsyncAction->UID = UID;
-    //AsyncAction->DatabaseRef=UFirebaseDatabasePath_Library::FriendsDBPath(FriendUID);
-
-    // Return the async function object so it can be activated
-    return AsyncAction;
+    OnCompleted.Broadcast(false, ErrorMessage);
 }
 
-void URejectFriendRequest::Activate()
-{
-    UFGDatabaseRef* SenderDatabaseRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(UID,FriendUID,true);
-    SenderDatabaseRef->RemoveValue();
+//////////////////////////////////////////////////////////////////////////
+// Accept Friend Request Async Action
+//////////////////////////////////////////////////////////////////////////
 
+UAcceptFriendRequestAsync* UAcceptFriendRequestAsync::AcceptFriendRequest(UObject* WorldContextObject, const FString& SenderUserID, const FString& TargetUserID)
+{
+    UAcceptFriendRequestAsync* Action = NewObject<UAcceptFriendRequestAsync>();
+    Action->SenderUserID = SenderUserID;
+    Action->TargetUserID = TargetUserID;
+    return Action;
+}
+
+void UAcceptFriendRequestAsync::Activate()
+{
+    // Add friend to sender's list
+    UFGDatabaseRef* SenderFriendsRef = UFirebaseDatabasePath_Library::FriendsDBPath(SenderUserID);
+    SenderFriendsRef->UpdateChildren(CreateFriendDataValue(SenderUserID, TargetUserID, true));
     
-    UFGDatabaseRef* ReciverDatabaseRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(UID,FriendUID,false);
-    ReciverDatabaseRef->RemoveValue();
-
-    On_Completed.Broadcast(true, FriendUID);
+    // Add friend to target's list
+    UFGDatabaseRef* TargetFriendsRef = UFirebaseDatabasePath_Library::FriendsDBPath(TargetUserID);
+    TargetFriendsRef->UpdateChildren(CreateFriendDataValue(TargetUserID, SenderUserID, true));
+    
+    // Remove request records
+    UFGDatabaseRef* SenderRequestRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(SenderUserID, TargetUserID, true);
+    SenderRequestRef->RemoveValue();
+    
+    UFGDatabaseRef* TargetRequestRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(SenderUserID, TargetUserID, false);
+    TargetRequestRef->RemoveValue();
+    
+    OnCompleted.Broadcast(true, TargetUserID);
 }
 
+//////////////////////////////////////////////////////////////////////////
+// Reject Friend Request Async Action
+//////////////////////////////////////////////////////////////////////////
 
+URejectFriendRequestAsync* URejectFriendRequestAsync::RejectFriendRequest(UObject* WorldContextObject, const FString& SenderUserID, const FString& TargetUserID)
+{
+    URejectFriendRequestAsync* Action = NewObject<URejectFriendRequestAsync>();
+    Action->SenderUserID = SenderUserID;
+    Action->TargetUserID = TargetUserID;
+    return Action;
+}
 
-
-
-
+void URejectFriendRequestAsync::Activate()
+{
+    // Remove request records
+    UFGDatabaseRef* SenderRequestRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(SenderUserID, TargetUserID, true);
+    SenderRequestRef->RemoveValue();
+    
+    UFGDatabaseRef* TargetRequestRef = UFirebaseDatabasePath_Library::FriendRequestsDBPath(SenderUserID, TargetUserID, false);
+    TargetRequestRef->RemoveValue();
+    
+    OnCompleted.Broadcast(true, TargetUserID);
+}
