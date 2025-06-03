@@ -21,6 +21,12 @@ struct FChatHistory
 
 	UPROPERTY(BlueprintReadOnly)
 	int32 UnreadCount = 0;
+
+	// Convert to JSON string
+	FString ToJson() const;
+    
+	// Create from JSON string
+	static FChatHistory FromJson(const FString& JsonString);
 };
 
 /**
@@ -46,20 +52,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Chat History")
 	void MarkChatAsRead(const FString& ChatID);
 
+
 	UFUNCTION(BlueprintCallable, Category = "Chat History")
-	int32 GetUnreadCount(const FString& ChatID) const;
+	int32 GetUnreadCountForChat(const FString& ChatID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Chat History")
+	int32 GetTotalUnreadCount() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Chat History")
+	int32 GetPrivateUnreadCount() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Chat History")
+	void SetActiveChat(const FString& ChatID);
+	
+	UFUNCTION(BlueprintCallable, Category = "Chat History|Storage")
+	bool SaveChatHistoryToStorage();
 
 private:
 	UPROPERTY()
 	FString CurrentActiveChatID;
-
-public:
-	UFUNCTION(BlueprintCallable)
-	void SetActiveChat(const FString& ChatID) 
-	{
-		CurrentActiveChatID = ChatID;
-		MarkChatAsRead(ChatID);
-	}
+	TArray<TSharedPtr<FJsonValue>> ConvertChatHistoriesToJsonArray() const;
 	
 private:
 	UPROPERTY()
